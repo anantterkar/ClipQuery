@@ -1,0 +1,17 @@
+customtkinter
+numpy
+torch
+ftfy
+regex
+tqdm
+Pillow
+opencv-python
+openai-whisper
+requests
+pytubefix
+moviepy
+pydub
+sentence-transformers
+langchain-ollama
+langchain-core
+git+https://github.com/openai/CLIP.git 

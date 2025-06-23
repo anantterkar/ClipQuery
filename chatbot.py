@@ -1,20 +1,22 @@
-# Vivi 2.0  – chat + smart video clipping  
-# ----------------------------------------------------------  
-# 1.  Imports  
-# ----------------------------------------------------------  
+#!/usr/bin/env python
+# coding: utf-8
+
 import os
 import subprocess
 import threading
 import tkinter as tk
 from tkinter import filedialog, scrolledtext, ttk
-import whisper
+from faster_whisper import WhisperModel
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_ollama import OllamaLLM
 import tempfile
 import uuid
 import time
+import torch
+import cv2
+from PIL import Image, ImageTk
 
-# ------------------ Helper Functions ------------------
+
 def _parse_srt_time(t):
     try:
         h, m, s_ms = t.split(":")
@@ -25,11 +27,13 @@ def _parse_srt_time(t):
             return int(h) * 3600 + int(m) * 60 + float(s_ms)
     except:
         pass
+
     try:
         m, s = t.split(":")
         return int(m) * 60 + float(s)
     except:
         pass
+
     try:
         return float(t)
     except:
@@ -42,16 +46,24 @@ def format_time(seconds):
     return f"{h:02}:{m:02}:{s:06.3f}".replace(".", ",")
 
 # ------------------ FFmpeg Functions ------------------
+
 def concatenate_videos(video_paths, output_filepath):
     try:
         if not video_paths:
             return "❌ Error: No video clips provided.", None
+
         ffmpeg_path = "C:\\ffmpeg\\ffmpeg.exe"  
+
+        # Create unique list file in temp dir
         temp_dir = tempfile.gettempdir()
         list_file_path = os.path.join(temp_dir, f"concat_list_{uuid.uuid4().hex[:8]}.txt")
+
+        # Write the list of files to concatenate
         with open(list_file_path, "w", encoding="utf-8") as f:
             for path in video_paths:
-                f.write(f"file '{path.replace('\\', '/')}" + "'\n")
+                f.write(f"file '{path.replace('\\', '/')}'\n")
+
+        # Run ffmpeg concat
         command = [
             ffmpeg_path, "-y",
             "-f", "concat", "-safe", "0",
@@ -59,12 +71,43 @@ def concatenate_videos(video_paths, output_filepath):
             "-c", "copy", output_filepath
         ]
         result = subprocess.run(command, capture_output=True, text=True)
+
+        # Cleanup list file
         os.remove(list_file_path)
+
         if result.returncode != 0:
             return f"❌ FFmpeg error:\n{result.stderr}", None
+
         return f"✅ Concatenated video saved to: {output_filepath}", output_filepath
+
     except Exception as e:
         return f"❌ Exception during concatenation: {str(e)}", None
+
+
+#def concatenate_videos(video_paths, output_path):
+ #   ffmpeg_path = 'C:\\ffmpeg'
+  #  try:
+   #     if not video_paths:
+    #        return "Error: No video clips provided.", None
+
+     #   list_file = "concat_list.txt"
+      #  with open(list_file, "w") as f:
+       #     for path in video_paths:
+        #        f.write(f"file '{path}'\n")
+
+#        command = [
+ #           ffmpeg_path, "-y", "-f", "concat", "-safe", "0",
+  #          "-i", list_file, "-c", "copy", output_path
+   #     ]
+
+    #    result = subprocess.run(command, capture_output=True, text=True)
+     #   os.remove(list_file)
+      #  if result.returncode != 0:
+       #     return f"Error concatenating: {result.stderr}", None
+        #return f"✅ Concatenated video saved to {output_path}", output_path
+
+#    except Exception as e:
+ #       return f"Error concatenating videos: {str(e)}", None
 
 # ------------------ LLM Setup ------------------
 llm = OllamaLLM(model='gemma3:1B')
@@ -154,13 +197,18 @@ class ViviChatbot:
 
     def clip_video(self, start_time, end_time):
         try:
+            # Validate time range
             if start_time >= end_time:
                 self.chat_display.insert(tk.END, f"\n⚠ Invalid clip range: start ({start_time}) >= end ({end_time})\n")
                 return " Invalid time range", None
+
+            # Use a unique filename to avoid collisions
             clip_filename = f"clip_{uuid.uuid4().hex[:8]}.mp4"
             output_path = os.path.join(tempfile.gettempdir(), clip_filename)
+
             if os.path.exists(output_path):
                 os.remove(output_path)
+
             subprocess.run([
                 "ffmpeg", "-y",
                 "-ss", str(start_time),
@@ -169,20 +217,23 @@ class ViviChatbot:
                 "-c", "copy",
                 output_path
             ], check=True)
+
             self.chat_display.yview(tk.END)
             return f"🎬 Video clip saved to {output_path}", output_path
+
         except subprocess.CalledProcessError as e:
             self.chat_display.insert(tk.END, f"\n❌ FFmpeg failed: {e}\n")
         except PermissionError as e:
             self.chat_display.insert(tk.END, f"\n❌ Permission denied: {e}\n")
         except Exception as e:
             self.chat_display.insert(tk.END, f"\n❌ Error clipping video: {e}\n")
-    
+
     def transcribe_video(self, video_path):
         base = os.path.splitext(os.path.basename(video_path))[0]
         dir_ = os.path.dirname(video_path)
         txt_path = os.path.join(dir_, f"{base}.txt")
         srt_path = os.path.join(dir_, f"{base}.srt")
+
         if os.path.exists(txt_path) and os.path.exists(srt_path):
             self.chat_display.insert(tk.END, "✅ Transcript and subtitles found.\n")
             with open(srt_path, "r", encoding="utf-8") as f:
@@ -197,15 +248,18 @@ class ViviChatbot:
                     text = " ".join(lines[2:])
                     segments.append({"start": start, "end": end, "text": text})
             return "\n".join(s['text'] for s in segments), segments
+
         self.chat_display.insert(tk.END, "🔍 Running Whisper transcription...\n")
-        model = whisper.load_model("medium")
-        result = model.transcribe(video_path, verbose=True)
+        model = WhisperModel("medium", device="cuda" if torch.cuda.is_available() else "cpu")
+        segments_iter, info = model.transcribe(video_path, beam_size=5)
         segments = []
-        for seg in result['segments']:
-            segments.append({"start": seg['start'], "end": seg['end'], "text": seg['text']})
+        for seg in segments_iter:
+            segments.append({"start": seg.start, "end": seg.end, "text": seg.text})
+
         with open(srt_path, "w", encoding="utf-8") as f:
             for i, seg in enumerate(segments):
                 f.write(f"{i+1}\n{format_time(seg['start'])} --> {format_time(seg['end'])}\n{seg['text']}\n\n")
+
         return "\n".join(s['text'] for s in segments), segments
 
     def send_message(self):
@@ -213,10 +267,12 @@ class ViviChatbot:
         if user_input.strip().lower() == "exit":
             self.root.destroy()
             return
+
         self.chat_display.insert(tk.END, f"You: {user_input}\n")
         self.user_entry.delete(0, tk.END)
         self.user_entry.config(state="disabled")
         self.send_btn.config(state="disabled")
+
         def run_bot():
             if user_input.lower().startswith("video clipping:"):
                 query = user_input[len("video clipping:"):].strip()
@@ -260,46 +316,60 @@ class ViviChatbot:
             self.user_entry.config(state="normal")
             self.send_btn.config(state="normal")
             self.user_entry.focus()
+
         threading.Thread(target=run_bot).start()
 
     def browse_video(self):
         self.video_path = filedialog.askopenfilename(filetypes=[("Video Files", "*.mp4 *.mov *.avi")])
         if not self.video_path:
             return
+
         self.chat_display.insert(tk.END, f"\n📁 Selected video: {os.path.basename(self.video_path)}\n")
+
         def process_video():
             self.full_transcript_text, self.transcript_segments = self.transcribe_video(self.video_path)
             self.chat_display.insert(tk.END, "✅ Transcription completed!\n\n")
             self.progress_var.set(0)
+
         threading.Thread(target=process_video).start()
 
     def play_video(self):
         if not self.video_path:
             self.chat_display.insert(tk.END, "\n⚠️ No video loaded yet. Upload a video first.\n")
             return
+
         cap = cv2.VideoCapture(self.video_path)
         if not cap.isOpened():
             self.chat_display.insert(tk.END, "\n❌ Failed to open video.\n")
             return
+
         self.cap = cap
         self.current_frame = 0
         self.playing = True
+
+        # Kill previous audio if running
         if self.audio_process and self.audio_process.poll() is None:
             self.audio_process.terminate()
+
+        # Play audio using ffplay
         self.audio_process = subprocess.Popen([
             "ffplay", "-nodisp", "-autoexit", "-loglevel", "quiet", self.video_path
         ])
+
         self.video_frame = tk.Toplevel(self.root)
         self.video_frame.title("🎥 Video Player")
+
         self.canvas = tk.Canvas(self.video_frame, width=int(cap.get(cv2.CAP_PROP_FRAME_WIDTH)),
                                 height=int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT)))
         self.canvas.pack()
+
         control_frame = tk.Frame(self.video_frame)
         control_frame.pack()
         play_btn = tk.Button(control_frame, text="▶️", command=lambda: self._play_frames)
         play_btn.pack(side="left", padx=5)
         pause_btn = tk.Button(control_frame, text="⏸️ Pause", command=self.pause_video)
         pause_btn.pack(side="left", padx=5)
+
         self.seek_scale = ttk.Scale(
             control_frame,
             from_=0,
@@ -309,12 +379,14 @@ class ViviChatbot:
             command=self.seek_video
         )
         self.seek_scale.pack(side="left", padx=10)
+
         self.playing = True
         self._play_frames()
 
     def _play_frames(self):
         if not self.playing or self.cap is None:
             return
+
         self.cap.set(cv2.CAP_PROP_POS_FRAMES, self.current_frame)
         ret, frame = self.cap.read()
         if not ret:
@@ -322,12 +394,15 @@ class ViviChatbot:
             if self.audio_process and self.audio_process.poll() is None:
                 self.audio_process.terminate()
             return
+
         frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
         img = ImageTk.PhotoImage(Image.fromarray(frame))
         self.canvas.img = img
         self.canvas.create_image(0, 0, anchor="nw", image=img)
+
         self.current_frame += 1
         self.seek_scale.set(self.current_frame)
+
         delay = int(1000 / self.cap.get(cv2.CAP_PROP_FPS))
         self.canvas.after(delay, self._play_frames)
 
@@ -357,5 +432,15 @@ class ViviChatbot:
 
 # Start the chatbot
 if __name__ == "__main__":
-    app = ViviChatbot()
-    app.run() 
+    try:
+        app = ViviChatbot()
+        app.run()
+    except Exception as e:
+        print(f"Error starting application: {str(e)}")
+
+
+# In[ ]:
+
+
+
+

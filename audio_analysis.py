@@ -8,7 +8,7 @@ except ImportError:
     pass
 from PIL import Image
 import cv2
-import whisper
+from faster_whisper import WhisperModel
 import re
 import requests
 from pytubefix import YouTube
@@ -90,38 +90,35 @@ def extract_subtitles(video_path, subtitle_path="subtitles.srt"):
         print("No subtitles found in the video.")
         return None
 
- 
 def transcribe_audio(audio_path, output_dir, query=None):
-    model = whisper.load_model("medium")
-    result = model.transcribe("audio.wav", verbose=True, task='transcribe', language='en', fp16=False)
+    # Initialize the Whisper model
+    model = WhisperModel("medium", device="cuda" if torch.cuda.is_available() else "cpu")
     
-    timestamped_transcript=""
-    for segment in result["segments"]:
-        timestamped_transcript+=f"[{segment['start']:.2f} - {segment['end']:.2f}] {segment['text']}\n"
-        print(f"[{segment['start']:.2f} - {segment['end']:.2f}] {segment['text']}")
-        
-    # save the transcript file
+    # Transcribe the audio
+    segments, info = model.transcribe(audio_path, beam_size=5)
+    
+    timestamped_transcript = ""
+    full_transcript = ""
+    
+    # Process segments
+    for segment in segments:
+        timestamped_line = f"[{segment.start:.2f} - {segment.end:.2f}] {segment.text}\n"
+        timestamped_transcript += timestamped_line
+        full_transcript += segment.text + " "
+        print(timestamped_line.strip())
+    
+    # Save the transcript file
     transcript_path = os.path.join(output_dir, os.path.splitext(os.path.basename(audio_path))[0] + "_transcript.txt")
-    with open(transcript_path, 'w', encoding='uft-8') as f:
-        f.write(result["text"])
-        
-    # function to format time
-    def format_time(seconds):
-        h = int(seconds // 3600)
-        m = int((seconds % 3600) // 60)
-        s = seconds % 60
-        return f"{h:02}:{m:02}:{s:06.3f}".replace(".", ",")
-    # save the srt file too
+    with open(transcript_path, 'w', encoding='utf-8') as f:
+        f.write(full_transcript)
+    
+    # Save the SRT file
     srt_path = os.path.join(output_dir, os.path.splitext(os.path.basename(transcript_path))[0] + ".srt")
-    segments = result["segments"]
     with open(srt_path, 'w', encoding='utf-8') as f:
-        for i, seg in enumerate(segments):
-            start = seg['start']
-            end = seg['end']
-            text = seg['text']
-            f.write(f"{i+1}\n")
-            f.write(f"{format_time(start)} --> {format_time(end)}\n")
-            f.write(f"{text.strip()}\n\n")
-            
+        for i, segment in enumerate(segments, start=1):
+            f.write(f"{i}\n")
+            f.write(f"{format_time(segment.start)} --> {format_time(segment.end)}\n")
+            f.write(f"{segment.text.strip()}\n\n")
+    
     return srt_path
      

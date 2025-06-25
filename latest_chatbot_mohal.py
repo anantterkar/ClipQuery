@@ -15,6 +15,7 @@ from langchain.prompts import ChatPromptTemplate
 import re
 import requests
 from rag_pipeline import VideoRAG
+import cv2
 
 # ------------------ Utility Functions ------------------
 def _parse_srt_time(t):
@@ -45,6 +46,9 @@ def format_time(seconds):
 
 # ------------------ FFmpeg Functions ------------------
 def concatenate_videos(video_paths, output_filepath):
+    video_paths = [p for p in video_paths if p and os.path.exists(p)]
+    if not video_paths:
+        return "❌ Error: No valid video clips provided.", None
     try:
         if not video_paths:
             return "❌ Error: No video clips provided.", None
@@ -73,13 +77,12 @@ llm = ChatGroq(model="llama3-70b-8192", temperature=1)
 
 general_template = """
 You are Vivi, an expert and friendly video assistant chatbot.
-You are having an ongoing conversation with the user. You have access to a full transcript of a video. If the user's question is about the video, answer helpfully and refer to timestamps if relevant.
-If the question is general and not related to the video, just respond helpfully like a normal assistant.
+You are having an ongoing conversation with the user. You have access to a transcript of a video. If the user's question is about the video, answer helpfully and use the transcript as context. Do not refer to timestamps unless they are explicitly present in the transcript context. If the question is general and not related to the video, just respond helpfully like a normal assistant.
 ---
 Conversation History:
 {context}
 ---
-Full Transcript of the Video:
+Transcript of the Video:
 {transcript}
 ---
 User:
@@ -89,20 +92,15 @@ Vivi:
 """
 
 clipping_template = """
-You are an expert video analysis assistant. Given a user query and the transcript of a video with timestamps, identify all timestamp ranges where the video content is relevant to the query. Return the result as a list of timestamp ranges (start and end times in seconds, formatted as plain numbers with exactly two decimal places, e.g., 31.00, 45.00). Each range must be followed by a brief explanation of its relevance. Ensure end_time is greater than start_time and both are non-negative. If no relevant segments are found, return an empty list with a note explaining why.
+You are an expert video analysis assistant. Given a user query and a set of relevant transcript segments (with timestamps), propose the best, smoothest video clip ranges (start and end times in seconds) that answer the query. You may merge, extend, or adjust the provided segments to avoid abrupt cuts and ensure the clips start and end at natural points (such as the beginning or end of a sentence or thought). Do NOT simply repeat the provided segment times—use them as context only. Return your proposed clip ranges as a list (start and end times in seconds, formatted as plain numbers with exactly two decimal places, e.g., 31.00, 45.00), each followed by a brief explanation of its relevance. Ensure end_time is greater than start_time and both are non-negative. If no suitable clip can be created, return an empty list with a note explaining why.
 
 Query: {query}
-Transcript: {transcript}
+Relevant Transcript Segments:
+{transcript}
 
 Return the result in the following format, with each range and explanation on separate lines:
 - Range: start_time - end_time
   Relevance: [Brief explanation of why this range is relevant to the query]
-
-Example:
-- Range: 10.00 - 20.00
-  Relevance: The segment discusses the query topic in detail.
-- Range: 55.60 - 62.72
-  Relevance: The segment mentions related concepts.
 """
 
 prompt_general = ChatPromptTemplate.from_template(general_template)
@@ -298,7 +296,10 @@ class ViviChatbot:
         )
         label.pack(anchor="w", padx=10, pady=5)
 
-    def clip_video(self, start_time, end_time):
+    def clip_video(self, video_path, start_time, end_time):
+        if not video_path or not os.path.exists(video_path):
+            self.display_message("system", "❌ No valid video found for clipping.")
+            return "No video found", None
         try:
             if start_time >= end_time:
                 self.display_message("system", f"⚠ Invalid clip range: {start_time} >= {end_time}")
@@ -307,7 +308,7 @@ class ViviChatbot:
             output_path = os.path.join(tempfile.gettempdir(), clip_filename)
             result = subprocess.run([
                 "ffmpeg", "-y", "-ss", str(start_time), "-to", str(end_time),
-                "-i", self.video_path, "-c", "copy", output_path
+                "-i", video_path, "-c", "copy", output_path
             ], capture_output=True, text=True, check=True)
             return f"🎬 Video clip saved to {output_path}", output_path
         except subprocess.CalledProcessError as e:
@@ -455,32 +456,33 @@ class ViviChatbot:
             print(f"Error reading transcript file {txt_path}: {e}")
         return segments
 
-    def build_llm_context(self, query):
+    def build_llm_context(self, query, for_clipping=False):
         """Use RAG to find relevant videos/segments and build the transcript context for the LLM."""
         if self.rag:
             rag_results = self.rag.query_videos(query, n_results=20)
+            # Sort by similarity (most relevant first)
             filtered = [r for r in rag_results if r['similarity'] <= self.similarity_threshold]
-            if not filtered:
-                return "", []
-            from collections import defaultdict
-            video_to_segments = defaultdict(list)
+            # Limit to top N segments
+            max_segments = 8
+            filtered = filtered[:max_segments]
+            # Limit total context length
+            max_total_chars = 12000  # ~3000 tokens, adjust as needed
+            context_lines = []
+            total_chars = 0
             for r in filtered:
-                video_to_segments[r['video_id']].append(r)
-            if len(video_to_segments) > self.max_videos_for_full_transcript:
-                context_lines = []
-                for vid, segs in video_to_segments.items():
-                    ranges = [(s['start'], s['end']) for s in segs]
-                    segments = self.load_transcript_segments(vid, relevant_ranges=ranges)
-                    for seg in segments:
-                        context_lines.append(f"[{seg['start']:.2f} - {seg['end']:.2f}] {seg['text']}")
-                return "\n".join(context_lines), filtered
-            else:
-                context_lines = []
-                for vid in video_to_segments:
-                    segments = self.load_transcript_segments(vid)
-                    for seg in segments:
-                        context_lines.append(f"[{seg['start']:.2f} - {seg['end']:.2f}] {seg['text']}")
-                return "\n".join(context_lines), filtered
+                # Truncate each segment if too long
+                text = r['text']
+                if len(text) > 300:
+                    text = text[:297] + "..."
+                if for_clipping:
+                    line = f"[{r['start']:.2f} - {r['end']:.2f}] {text}"
+                else:
+                    line = text
+                if total_chars + len(line) > max_total_chars:
+                    break
+                context_lines.append(line)
+                total_chars += len(line)
+            return "\n".join(context_lines), filtered
         else:
             return "", []
 
@@ -498,36 +500,82 @@ class ViviChatbot:
             return str(response.content) if hasattr(response, "content") else str(response)
 
         def run_bot():
-            # Always use RAG to build context
-            context, rag_results = self.build_llm_context(user_input)
-            # Do NOT display RAG results to the user
             if user_input.lower().startswith("clipping:"):
                 query = user_input[len("clipping:"):].strip()
-                # Use RAG context for clipping
-                response_text = chain_clipping.invoke({"query": query, "transcript": context})
+                context, rag_results = self.build_llm_context(query, for_clipping=True)
+                # Build context from only the relevant RAG segments (smoother)
+                if rag_results:
+                    sorted_rag = sorted(rag_results, key=lambda r: r['similarity'], reverse=True)
+                    context_lines = [f"[{r['start']:.2f} - {r['end']:.2f}] {r['text']}" for r in sorted_rag]
+                    rag_context = "\n".join(context_lines)
+                else:
+                    rag_context = ""
+                response_text = chain_clipping.invoke({"query": query, "transcript": rag_context})
                 response = extract_content(response_text)
                 print(f"LLM Response: {response}")  # Debug
                 video_clips = []
+                relevant_video_ids = list({seg['video_id'] for seg in rag_results})
+                available_videos = []
+                for vid in relevant_video_ids:
+                    candidate_path = os.path.join("Max Life Videos", f"{vid}.mp4")
+                    if os.path.exists(candidate_path):
+                        available_videos.append((vid, candidate_path, self.get_video_duration(candidate_path)))
+                print(f"Available videos: {available_videos}")
                 for line in response.strip().split("\n"):
                     if line.startswith("- Range: "):
                         parts = line[len("- Range: "):].split(" - ")
                         try:
                             start = float(parts[0])
                             end = float(parts[1])
-                            msg, clip_path = self.clip_video(start, end)
-                            if clip_path:
-                                video_clips.append(clip_path)
                         except:
                             continue
+                        print(f"Proposed clip: {start}-{end}")
+                        video_file = None
+                        matched_video_id = None
+                        # 1. Try to match by overlap
+                        for seg in rag_results:
+                            if (start < seg['end'] and end > seg['start']):
+                                matched_video_id = seg['video_id']
+                                break
+                        # 2. If only one relevant video, use it
+                        if not matched_video_id and len(relevant_video_ids) == 1:
+                            matched_video_id = relevant_video_ids[0]
+                        # 3. Fallback to most relevant video
+                        if not matched_video_id and rag_results:
+                            matched_video_id = rag_results[0]['video_id']
+                        # 4. Try to get the video file
+                        if matched_video_id:
+                            candidate_path = os.path.join("Max Life Videos", f"{matched_video_id}.mp4")
+                            if os.path.exists(candidate_path):
+                                video_file = candidate_path
+                        # 5. Fallback to any available video
+                        if not video_file and available_videos:
+                            video_file = available_videos[0][1]
+                        # 6. Fallback to uploaded video
+                        if not video_file and self.video_path and os.path.exists(self.video_path):
+                            video_file = self.video_path
+                        # 7. Check if the range is within the video duration
+                        if video_file:
+                            duration = self.get_video_duration(video_file)
+                            print(f"Using video: {video_file} (duration: {duration}) for clip {start}-{end}")
+                            if duration is not None and (start >= duration or end > duration):
+                                self.display_message("system", f"❌ Clip range {start}-{end} is outside video duration {duration}.")
+                                continue
+                            msg, clip_path = self.clip_video(video_file, start, end)
+                            if clip_path:
+                                video_clips.append(clip_path)
+                        else:
+                            self.display_message("system", "❌ No valid video found for this clip range.")
+                video_clips = [p for p in video_clips if p and os.path.exists(p)]
                 if not video_clips:
                     self.display_message("system", "⚠ No valid clips generated for concatenation.")
                 else:
-                    output_filepath = os.path.join(os.path.dirname(self.video_path), "final_output.mp4")
+                    output_filepath = os.path.join(tempfile.gettempdir(), "final_output.mp4")
                     msg, out = concatenate_videos(video_clips, output_filepath)
                     print(f"Concatenation result: {msg}, Output: {out}")  # Debug
                     self.display_message("Vivi", msg)
             else:
-                # Use RAG context for all LLM queries
+                context, rag_results = self.build_llm_context(user_input, for_clipping=False)
                 response_text = chain_general.invoke({
                     "context": self.context,
                     "question": user_input,
@@ -576,6 +624,23 @@ class ViviChatbot:
             self.audio_process = subprocess.Popen(["ffplay", "-autoexit", "-loglevel", "quiet", final_output])
         except Exception as e:
             self.display_message("system", f"❌ Failed to play final video: {e}")
+
+    def get_video_duration(self, video_path):
+        try:
+            cap = cv2.VideoCapture(video_path)
+            if not cap.isOpened():
+                return None
+            fps = cap.get(cv2.CAP_PROP_FPS)
+            frame_count = cap.get(cv2.CAP_PROP_FRAME_COUNT)
+            if fps > 0:
+                duration = frame_count / fps
+            else:
+                duration = None
+            cap.release()
+            return duration
+        except Exception as e:
+            print(f"Error getting duration for {video_path}: {e}")
+            return None
 
     def run(self):
         self.root.mainloop()

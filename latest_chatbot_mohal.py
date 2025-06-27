@@ -456,33 +456,75 @@ class ViviChatbot:
             print(f"Error reading transcript file {txt_path}: {e}")
         return segments
 
+    def load_full_transcript(self, video_id):
+        """Load the full transcript for a video."""
+        txt_path = os.path.join("Max Life Videos", f"{video_id}.txt")
+        txt_path = os.path.normpath(txt_path)
+        if not os.path.exists(txt_path):
+            print(f"Transcript file not found: {txt_path}")
+            return ""
+        try:
+            with open(txt_path, "r", encoding="utf-8") as f:
+                return f.read().strip()
+        except Exception as e:
+            print(f"Error reading transcript file {txt_path}: {e}")
+            return ""
+
     def build_llm_context(self, query, for_clipping=False):
         """Use RAG to find relevant videos/segments and build the transcript context for the LLM."""
         if self.rag:
             rag_results = self.rag.query_videos(query, n_results=20)
             # Sort by similarity (most relevant first)
             filtered = [r for r in rag_results if r['similarity'] <= self.similarity_threshold]
-            # Limit to top N segments
-            max_segments = 8
-            filtered = filtered[:max_segments]
-            # Limit total context length
-            max_total_chars = 12000  # ~3000 tokens, adjust as needed
-            context_lines = []
-            total_chars = 0
-            for r in filtered:
-                # Truncate each segment if too long
-                text = r['text']
-                if len(text) > 300:
-                    text = text[:297] + "..."
-                if for_clipping:
-                    line = f"[{r['start']:.2f} - {r['end']:.2f}] {text}"
-                else:
-                    line = text
-                if total_chars + len(line) > max_total_chars:
-                    break
-                context_lines.append(line)
-                total_chars += len(line)
-            return "\n".join(context_lines), filtered
+            
+            # Get unique video IDs from the filtered results
+            video_ids = list({r['video_id'] for r in filtered})
+            
+            # If we have fewer than 4 relevant videos, use full transcripts
+            if len(video_ids) < 4:
+                print(f"Using full transcripts for {len(video_ids)} videos")
+                context_lines = []
+                total_chars = 0
+                max_total_chars = 12000  # ~3000 tokens, adjust as needed
+                
+                for video_id in video_ids:
+                    full_transcript = self.load_full_transcript(video_id)
+                    if full_transcript:
+                        # Truncate if too long
+                        if len(full_transcript) > 3000:
+                            full_transcript = full_transcript[:2997] + "..."
+                        
+                        if total_chars + len(full_transcript) > max_total_chars:
+                            break
+                        
+                        context_lines.append(full_transcript)
+                        total_chars += len(full_transcript)
+                
+                return "\n\n".join(context_lines), filtered
+            else:
+                # Use segments as before for 4+ videos
+                print(f"Using segments for {len(video_ids)} videos")
+                # Limit to top N segments
+                max_segments = 8
+                filtered = filtered[:max_segments]
+                # Limit total context length
+                max_total_chars = 12000  # ~3000 tokens, adjust as needed
+                context_lines = []
+                total_chars = 0
+                for r in filtered:
+                    # Truncate each segment if too long
+                    text = r['text']
+                    if len(text) > 300:
+                        text = text[:297] + "..."
+                    if for_clipping:
+                        line = f"[{r['start']:.2f} - {r['end']:.2f}] {text}"
+                    else:
+                        line = text
+                    if total_chars + len(line) > max_total_chars:
+                        break
+                    context_lines.append(line)
+                    total_chars += len(line)
+                return "\n".join(context_lines), filtered
         else:
             return "", []
 

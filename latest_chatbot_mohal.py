@@ -16,6 +16,7 @@ import re
 import requests
 from rag_pipeline import VideoRAG
 import cv2
+import json
 
 # Import Google Drive sync
 try:
@@ -66,12 +67,38 @@ def concatenate_videos(video_paths, output_filepath):
             for path in video_paths:
                 normalized_path = path.replace('\\', '/')
                 f.write(f"file '{normalized_path}'\n")
+        
+        # Use re-encoding instead of stream copying for better compatibility
+        # This ensures all clips have consistent codecs, frame rates, and audio settings
         command = [
-            "ffmpeg", "-y", "-f", "concat", "-safe", "0",
-            "-i", list_file_path, "-c", "copy", output_filepath
+            "ffmpeg", "-y", 
+            "-f", "concat", 
+            "-safe", "0",
+            "-i", list_file_path, 
+            "-c:v", "libx264",           # Use H.264 codec for video
+            "-c:a", "aac",               # Use AAC codec for audio
+            "-preset", "fast",           # Fast encoding preset
+            "-crf", "23",                # Good quality setting
+            "-r", "30",                  # Force 30fps for consistency
+            "-ar", "44100",              # Force 44.1kHz audio sample rate
+            "-ac", "2",                  # Force stereo audio
+            "-movflags", "+faststart",   # Optimize for streaming
+            "-avoid_negative_ts", "make_zero",  # Handle negative timestamps
+            "-fflags", "+genpts",        # Generate presentation timestamps
+            output_filepath
         ]
         result = subprocess.run(command, capture_output=True, text=True, check=True)
-        os.remove(list_file_path)
+        
+        # Clean up temporary files
+        try:
+            os.remove(list_file_path)
+            # Also clean up individual clip files
+            for clip_path in video_paths:
+                if os.path.exists(clip_path) and "clip_" in os.path.basename(clip_path):
+                    os.remove(clip_path)
+        except Exception as e:
+            print(f"Warning: Could not clean up temporary files: {e}")
+        
         return f"✅ Concatenated video saved to: {output_filepath}", output_filepath
     except subprocess.CalledProcessError as e:
         return f"❌ FFmpeg error: {e.stderr}", None
@@ -398,12 +425,31 @@ class ViviChatbot:
             if start_time >= end_time:
                 self.display_message("system", f"⚠ Invalid clip range: {start_time} >= {end_time}")
                 return "Invalid time range", None
+            
             clip_filename = f"clip_{uuid.uuid4().hex[:8]}.mp4"
             output_path = os.path.join(tempfile.gettempdir(), clip_filename)
-            result = subprocess.run([
-                "ffmpeg", "-y", "-ss", str(start_time), "-to", str(end_time),
-                "-i", video_path, "-c", "copy", output_path
-            ], capture_output=True, text=True, check=True)
+            
+            # Use re-encoding instead of stream copying to prevent frame freezing and sync issues
+            # Force keyframe alignment and consistent codec settings
+            command = [
+                "ffmpeg", "-y",
+                "-ss", str(start_time),
+                "-i", video_path,
+                "-t", str(end_time - start_time),
+                "-c:v", "libx264",           # Use H.264 codec for video
+                "-c:a", "aac",               # Use AAC codec for audio
+                "-preset", "fast",           # Fast encoding preset
+                "-crf", "23",                # Good quality setting
+                "-avoid_negative_ts", "make_zero",  # Handle negative timestamps
+                "-fflags", "+genpts",        # Generate presentation timestamps
+                "-r", "30",                  # Force 30fps for consistency
+                "-ar", "44100",              # Force 44.1kHz audio sample rate
+                "-ac", "2",                  # Force stereo audio
+                "-movflags", "+faststart",   # Optimize for streaming
+                output_path
+            ]
+            
+            result = subprocess.run(command, capture_output=True, text=True, check=True)
             return f"🎬 Video clip saved to {output_path}", output_path
         except subprocess.CalledProcessError as e:
             self.display_message("system", f"❌ FFmpeg error: {e.stderr}")
@@ -1457,6 +1503,13 @@ class ViviChatbot:
                 if not video_clips:
                     self.display_message("system", "⚠ No valid clips generated for concatenation.")
                 else:
+                    # Validate video compatibility before concatenation
+                    is_compatible, compatibility_msg = self.validate_video_compatibility(video_clips)
+                    if not is_compatible:
+                        print(f"Warning: {compatibility_msg}")
+                        self.display_message("system", f"⚠ Video compatibility warning: {compatibility_msg}")
+                        # Continue anyway since we're using re-encoding
+                    
                     output_filepath = os.path.join(tempfile.gettempdir(), "final_output.mp4")
                     msg, out = concatenate_videos(video_clips, output_filepath)
                     print(f"Concatenation result: {msg}, Output: {out}")  # Debug
@@ -1513,7 +1566,11 @@ class ViviChatbot:
             self.display_message("system", f"❌ Failed to play input video: {e}")
 
     def play_final_video(self):
-        final_output = os.path.join(os.path.dirname(self.video_path), "final_output.mp4")
+        # Check temp directory first, then fallback to original video directory
+        final_output = os.path.join(tempfile.gettempdir(), "final_output.mp4")
+        if not os.path.exists(final_output) and self.video_path:
+            final_output = os.path.join(os.path.dirname(self.video_path), "final_output.mp4")
+        
         if not os.path.exists(final_output):
             self.display_message("system", "⚠️ No final video available. Generate a clipped video first.")
             return
@@ -1540,6 +1597,85 @@ class ViviChatbot:
         except Exception as e:
             print(f"Error getting duration for {video_path}: {e}")
             return None
+
+    def get_video_properties(self, video_path):
+        """Get video properties like codec, frame rate, resolution, etc."""
+        try:
+            command = [
+                "ffprobe", "-v", "quiet", "-print_format", "json",
+                "-show_format", "-show_streams", video_path
+            ]
+            result = subprocess.run(command, capture_output=True, text=True, check=True)
+            data = json.loads(result.stdout)
+            
+            properties = {
+                'duration': None,
+                'fps': None,
+                'width': None,
+                'height': None,
+                'video_codec': None,
+                'audio_codec': None,
+                'audio_sample_rate': None,
+                'audio_channels': None
+            }
+            
+            if 'format' in data and 'duration' in data['format']:
+                properties['duration'] = float(data['format']['duration'])
+            
+            for stream in data.get('streams', []):
+                if stream['codec_type'] == 'video':
+                    properties['fps'] = eval(stream.get('r_frame_rate', '30/1'))
+                    properties['width'] = int(stream.get('width', 0))
+                    properties['height'] = int(stream.get('height', 0))
+                    properties['video_codec'] = stream.get('codec_name', 'unknown')
+                elif stream['codec_type'] == 'audio':
+                    properties['audio_codec'] = stream.get('codec_name', 'unknown')
+                    properties['audio_sample_rate'] = int(stream.get('sample_rate', 0))
+                    properties['audio_channels'] = int(stream.get('channels', 0))
+            
+            return properties
+        except Exception as e:
+            print(f"Error getting video properties for {video_path}: {e}")
+            return None
+
+    def validate_video_compatibility(self, video_paths):
+        """Validate that all videos have compatible properties for concatenation."""
+        if not video_paths:
+            return True, "No videos to validate"
+        
+        properties_list = []
+        for path in video_paths:
+            props = self.get_video_properties(path)
+            if props:
+                properties_list.append((path, props))
+            else:
+                return False, f"Could not get properties for {path}"
+        
+        if len(properties_list) < 2:
+            return True, "Only one video, no compatibility issues"
+        
+        # Check for major compatibility issues
+        issues = []
+        base_props = properties_list[0][1]
+        
+        for path, props in properties_list[1:]:
+            # Check for major differences that could cause issues
+            if props['video_codec'] != base_props['video_codec']:
+                issues.append(f"Different video codecs: {base_props['video_codec']} vs {props['video_codec']} in {path}")
+            
+            if props['audio_codec'] != base_props['audio_codec']:
+                issues.append(f"Different audio codecs: {base_props['audio_codec']} vs {props['audio_codec']} in {path}")
+            
+            if abs(props['fps'] - base_props['fps']) > 1:
+                issues.append(f"Significant FPS difference: {base_props['fps']} vs {props['fps']} in {path}")
+            
+            if abs(props['audio_sample_rate'] - base_props['audio_sample_rate']) > 1000:
+                issues.append(f"Different audio sample rates: {base_props['audio_sample_rate']} vs {props['audio_sample_rate']} in {path}")
+        
+        if issues:
+            return False, f"Compatibility issues found: {'; '.join(issues)}"
+        
+        return True, "All videos are compatible"
 
     def deduplicate_clips(self, clips, min_overlap=0.3, query=""):
         """Remove overlapping clips and keep only the most relevant ones."""

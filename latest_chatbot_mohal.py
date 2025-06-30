@@ -1177,17 +1177,87 @@ class ViviChatbot:
                 query = user_input[len("clipping:"):].strip()
                 context, rag_results = self.build_llm_context(query, for_clipping=True)
                 
+                # Pre-filter to identify the most relevant video for this query
+                query_keywords = query.lower().split()
+                relevant_keywords = ['surgery', 'claim', 'insurance', 'policy', 'hours', 'less', 'than', '3', 'three', 'procedure', 'medical', 'treatment']
+                
+                # Score each video based on query relevance
+                video_scores = {}
+                for video_id in list({r['video_id'] for r in rag_results}):
+                    score = 0
+                    full_transcript = self.load_full_transcript(video_id)
+                    if full_transcript:
+                        transcript_lower = full_transcript.lower()
+                        
+                        # Check for exact keyword matches
+                        for keyword in relevant_keywords:
+                            if keyword in transcript_lower:
+                                score += 2
+                        
+                        # Check for specific query terms with higher weight
+                        if 'surgery' in query.lower() and 'surgery' in transcript_lower:
+                            score += 10
+                        if 'claim' in query.lower() and 'claim' in transcript_lower:
+                            score += 8
+                        if 'insurance' in query.lower() and 'insurance' in transcript_lower:
+                            score += 5
+                        if 'policy' in query.lower() and 'policy' in transcript_lower:
+                            score += 5
+                        if 'hours' in query.lower() and 'hours' in transcript_lower:
+                            score += 6
+                        if '3' in query.lower() or 'three' in query.lower():
+                            if '3' in transcript_lower or 'three' in transcript_lower:
+                                score += 4
+                        
+                        # Check for video title relevance
+                        if 'surgery' in video_id.lower():
+                            score += 15
+                        if 'insurance' in video_id.lower():
+                            score += 8
+                        
+                        # Check if this video has segments that match the query
+                        video_segments = [s for s in rag_results if s['video_id'] == video_id]
+                        if video_segments:
+                            # Calculate average similarity (lower is better)
+                            avg_similarity = sum(s['similarity'] for s in video_segments) / len(video_segments)
+                            score += (1 - avg_similarity) * 10  # Better similarity = higher score
+                        
+                        video_scores[video_id] = score
+                        print(f"Video {video_id} relevance score: {score}")
+                
+                # Find the best matching video
+                primary_video_id = None
+                if video_scores:
+                    primary_video_id = max(video_scores.keys(), key=lambda x: video_scores[x])
+                    print(f"Primary video identified: {primary_video_id} (score: {video_scores[primary_video_id]})")
+                    
+                    # Filter RAG results to prioritize the primary video
+                    primary_video_segments = [r for r in rag_results if r['video_id'] == primary_video_id]
+                    other_video_segments = [r for r in rag_results if r['video_id'] != primary_video_id]
+                    
+                    # Use primary video segments first, then add others if needed
+                    filtered_rag_results = primary_video_segments + other_video_segments[:5]  # Limit other videos
+                    
+                    # Rebuild context with filtered results
+                    context = ""
+                    for result in filtered_rag_results:
+                        context += f"[{result['start']:.2f} - {result['end']:.2f}] {result['text']}\n"
+                    
+                    print(f"Filtered to {len(primary_video_segments)} segments from primary video, {len(other_video_segments[:5])} from others")
+                
                 # Debug: Show what context is being used for clipping
                 print(f"=== CLIPPING DEBUG ===")
                 print(f"Query: {query}")
                 print(f"Context length: {len(context)}")
                 print(f"RAG results count: {len(rag_results) if rag_results else 0}")
+                if primary_video_id:
+                    print(f"Primary video: {primary_video_id}")
                 
                 # Use the debug helper
                 self.debug_video_usage(rag_results, "clipping")
                 
-                # Get unique video IDs
-                video_ids = list({r['video_id'] for r in rag_results}) if rag_results else []
+                # Get unique video IDs from filtered results
+                video_ids = list({r['video_id'] for r in filtered_rag_results}) if 'filtered_rag_results' in locals() else list({r['video_id'] for r in rag_results}) if rag_results else []
                 print(f"Unique video IDs: {video_ids}")
                 
                 # For clipping, we need to provide timestamped segments to the LLM
@@ -1241,14 +1311,14 @@ class ViviChatbot:
                                 print(f"Acronym segment {seg['start']:.2f}-{seg['end']:.2f} from video {seg['video_id']}")
                         else:
                             # Fallback to normal processing
-                            sorted_rag = sorted(rag_results, key=lambda r: r['similarity'], reverse=True)
+                            sorted_rag = sorted(filtered_rag_results if 'filtered_rag_results' in locals() else rag_results, key=lambda r: r['similarity'], reverse=True)
                             merged_segments = self.merge_adjacent_segments(sorted_rag, max_gap=3.0)
                             expanded_segments = self.expand_segments_for_completeness(merged_segments, max_expansion=60)
                             context_lines = [f"[{r['start']:.2f} - {r['end']:.2f}] {r['text']}" for r in expanded_segments]
                             rag_context = "\n".join(context_lines)
                     else:
                         # Normal processing for non-acronym queries
-                        sorted_rag = sorted(rag_results, key=lambda r: r['similarity'], reverse=True)
+                        sorted_rag = sorted(filtered_rag_results if 'filtered_rag_results' in locals() else rag_results, key=lambda r: r['similarity'], reverse=True)
                         merged_segments = self.merge_adjacent_segments(sorted_rag, max_gap=3.0)
                         expanded_segments = self.expand_segments_for_completeness(merged_segments, max_expansion=60)
                         context_lines = [f"[{r['start']:.2f} - {r['end']:.2f}] {r['text']}" for r in expanded_segments]
@@ -1267,7 +1337,7 @@ class ViviChatbot:
                             acronym_segments = []
                             other_segments = []
                             
-                            for r in rag_results:
+                            for r in filtered_rag_results if 'filtered_rag_results' in locals() else rag_results:
                                 if any(acronym in r['text'].upper() for acronym in detected_acronyms):
                                     acronym_segments.append(r)
                                 else:
@@ -1281,7 +1351,7 @@ class ViviChatbot:
                             combined_segments = sorted_acronym + sorted_other
                             print(f"Prioritized {len(sorted_acronym)} acronym-containing segments out of {len(combined_segments)} total")
                         else:
-                            combined_segments = sorted(rag_results, key=lambda r: r['similarity'], reverse=True)
+                            combined_segments = sorted(filtered_rag_results if 'filtered_rag_results' in locals() else rag_results, key=lambda r: r['similarity'], reverse=True)
                         
                         merged_segments = self.merge_adjacent_segments(combined_segments, max_gap=3.0)
                         expanded_segments = self.expand_segments_for_completeness(merged_segments, max_expansion=60)
@@ -1326,12 +1396,29 @@ class ViviChatbot:
                         print("Warning: Not all requested acronyms are covered in the clips")
                 
                 video_clips = []
-                relevant_video_ids = list({seg['video_id'] for seg in rag_results}) if rag_results else []
+                # Fix: Use standard if-else for relevant_video_ids
+                if 'filtered_rag_results' in locals():
+                    relevant_video_ids = list({seg['video_id'] for seg in filtered_rag_results})
+                else:
+                    relevant_video_ids = list({seg['video_id'] for seg in rag_results}) if rag_results else []
                 available_videos = []
+                
+                # Prioritize the primary video if available
+                if 'primary_video_id' in locals() and primary_video_id:
+                    primary_path = os.path.join("Max Life Videos", f"{primary_video_id}.mp4")
+                    if os.path.exists(primary_path):
+                        available_videos.append((primary_video_id, primary_path, self.get_video_duration(primary_path)))
+                        print(f"Added primary video: {primary_video_id}")
+                
+                # Add other videos
                 for vid in relevant_video_ids:
+                    # Skip primary video as it's already added
+                    if 'primary_video_id' in locals() and vid == primary_video_id:
+                        continue
                     candidate_path = os.path.join("Max Life Videos", f"{vid}.mp4")
                     if os.path.exists(candidate_path):
                         available_videos.append((vid, candidate_path, self.get_video_duration(candidate_path)))
+                
                 print(f"Available videos: {available_videos}")
                 
                 # Process each proposed clip
@@ -1347,6 +1434,11 @@ class ViviChatbot:
                     if 'video_id' in clip:
                         matched_video_id = clip['video_id']
                         print(f"Using assigned video_id: {matched_video_id}")
+                    
+                    # If we have a primary video identified, use it as the first choice
+                    if not matched_video_id and 'primary_video_id' in locals() and primary_video_id:
+                        matched_video_id = primary_video_id
+                        print(f"Using primary video: {matched_video_id}")
                     
                     # For acronym queries, try to match based on the acronym segments first
                     if not matched_video_id and any(keyword in query.lower() for keyword in ['acronym', 'meaning', 'what is', 'stands for']):
@@ -1462,6 +1554,14 @@ class ViviChatbot:
                         candidate_path = os.path.join("Max Life Videos", f"{matched_video_id}.mp4")
                         if os.path.exists(candidate_path):
                             video_file = candidate_path
+                    
+                    # If we have a primary video, try to use it first
+                    if not video_file and 'primary_video_id' in locals() and primary_video_id:
+                        primary_path = os.path.join("Max Life Videos", f"{primary_video_id}.mp4")
+                        if os.path.exists(primary_path):
+                            video_file = primary_path
+                            matched_video_id = primary_video_id
+                            print(f"Using primary video file: {video_file}")
                     
                     # Fallback to any available video
                     if not video_file and available_videos:

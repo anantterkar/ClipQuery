@@ -1,0 +1,204 @@
+1
+00:00:00,000 --> 00:00:08,580
+ After our last video on policy porting, many of you asked about policy migration and how it differs from porting.
+
+2
+00:00:08,680 --> 00:00:13,400
+ Today, we are going to break down both concepts and help you understand exactly when to choose which option.
+
+3
+00:00:13,560 --> 00:00:16,460
+ Hi folks, I'm Shashank and you're watching Ditto Insurance.
+
+4
+00:00:16,460 --> 00:00:23,060
+ We are an insurance advisory platform and if you're looking for quality and free health insurance and term life insurance advice,
+
+5
+00:00:23,260 --> 00:00:26,040
+ then quickly book a free chat with us with the link in the description.
+
+6
+00:00:26,040 --> 00:00:27,600
+ Now, let's start with the basics.
+
+7
+00:00:27,900 --> 00:00:31,360
+ And I mean crystal clear definitions that'll help you understand everything that follows.
+
+8
+00:00:31,760 --> 00:00:35,920
+ Policy migration is when you switch from one health insurance plan to another
+
+9
+00:00:35,920 --> 00:00:38,340
+ while staying with the same insurance company.
+
+10
+00:00:38,720 --> 00:00:41,040
+ Think of it as an internal upgrade or change.
+
+11
+00:00:41,380 --> 00:00:45,980
+ For example, you might migrate from basic plan to a premium plan with better coverage,
+
+12
+00:00:46,320 --> 00:00:47,980
+ all within the same insurance company.
+
+13
+00:00:48,500 --> 00:00:52,080
+ Porting, on the other hand, is when you switch your entire policy
+
+14
+00:00:52,080 --> 00:00:54,480
+ from one insurance company to another.
+
+15
+00:00:54,480 --> 00:00:57,380
+ like switching your sim from Airtel to Jio.
+
+16
+00:00:57,380 --> 00:01:00,880
+ The key here is that you get to keep your accumulated benefits.
+
+17
+00:01:00,880 --> 00:01:11,276
+ Yes those waiting periods you already served stay intact Now let break down the crucial difference between porting and migration First let talk timing With porting you can only make
+
+18
+00:01:11,276 --> 00:01:16,236
+ the switch during policy renewal and you need to give your insurer advance notice, typically 45 to
+
+19
+00:01:16,236 --> 00:01:22,876
+ 60 days before renewal. Migration is more flexible. Most insurers allow you to migrate plans at any
+
+20
+00:01:22,876 --> 00:01:28,936
+ time during your policy period. Second, let's discuss documentation. Porting requires significant
+
+21
+00:01:28,936 --> 00:01:34,736
+ paperwork. You'll need to fill out portability forms, provide KYC documents, submit your existing
+
+22
+00:01:34,736 --> 00:01:39,456
+ policy details and share your complete claims history. Migration? Much simpler. Since you're
+
+23
+00:01:39,456 --> 00:01:43,476
+ staying with the same insurer, they already know you, so they have all your information.
+
+24
+00:01:43,956 --> 00:01:49,216
+ Third, let's take a look at the premiums. When you port, your new insurer will assess your risk
+
+25
+00:01:49,216 --> 00:01:53,816
+ profile and set premiums accordingly. With migration, while premiums might change based
+
+26
+00:01:53,816 --> 00:01:57,916
+ on your new plan's features, they usually stay relatively similar since you're with the same
+
+27
+00:01:57,916 --> 00:02:02,856
+ insurer. Now the big question, when should you port and when should you migrate? Choose
+
+28
+00:02:02,856 --> 00:02:18,991
+ porting when you are unhappy with your current insurer service you found another insurer with better claim settlement ratios you want access to a broader hospital network or you found significantly better coverage options with another insurer Choose migration when you
+
+29
+00:02:18,991 --> 00:02:25,331
+ satisfied with your current insurance company, but you need different features and want to avoid the
+
+30
+00:02:25,331 --> 00:02:30,451
+ hassle of changing insurers. You also want a quicker, simpler process with less documentation,
+
+31
+00:02:30,891 --> 00:02:36,091
+ and you're looking to upgrade or modify your coverage within the same company. And finally,
+
+32
+00:02:36,091 --> 00:02:40,551
+ you're moving from a group policy to an individual policy within the same insurer.
+
+33
+00:02:41,051 --> 00:02:45,811
+ Now, here's something crucial to understand. Both options protect your continuity benefits.
+
+34
+00:02:46,211 --> 00:02:51,171
+ This means your waiting periods for pre-existing conditions and any no claim bonuses that you have
+
+35
+00:02:51,171 --> 00:02:56,611
+ accumulated won't go to waste. However, always read the fine print of your new policy, whether
+
+36
+00:02:56,611 --> 00:03:02,211
+ you're porting or migrating. Now, let's address some questions that you guys have already asked us.
+
+37
+00:03:02,211 --> 00:03:07,131
+ Will my premium definitely increase if I port or migrate?
+
+38
+00:03:07,131 --> 00:03:11,771
+ Not necessarily, with porting it depends on the new insurers assessment, with migration
+
+39
+00:03:11,771 --> 00:03:26,147
+ it primarily depends on the features of your new plan Next can I change my sum insured during porting or migration Yes you can But remember for a higher sum insured you might need to undergo medical tests especially when porting
+
+40
+00:03:26,467 --> 00:03:32,247
+ What happens to my ongoing treatment if I port or migrate? Now, your coverage continues seamlessly,
+
+41
+00:03:32,427 --> 00:03:37,067
+ but make sure to disclose any ongoing treatments during application process. So folks, here's the
+
+42
+00:03:37,067 --> 00:03:41,967
+ bottom line. Both porting and migration are valuable tools that give you flexibility with
+
+43
+00:03:41,967 --> 00:03:46,787
+ your health insurance coverage. If you're unhappy with your insurer's service or find better option
+
+44
+00:03:46,787 --> 00:03:50,887
+ elsewhere, porting might be your best bet. If you're looking for different features but are
+
+45
+00:03:50,887 --> 00:03:55,767
+ satisfied with your current insurer, migration is probably the best way to go. Remember, the goal
+
+46
+00:03:55,767 --> 00:03:59,867
+ is to have the best possible health coverage for your needs. Don't stick with a plan that's not
+
+47
+00:03:59,867 --> 00:04:04,187
+ serving you well just because change seems daunting. Whether you choose to port or migrate,
+
+48
+00:04:04,267 --> 00:04:07,607
+ the important thing is to make an informed decision based on your specific needs and
+
+49
+00:04:07,607 --> 00:04:11,447
+ circumstances. If you found this explanation helpful, don't forget to like and subscribe
+
+50
+00:04:11,447 --> 00:04:17,047
+ for more clear practical insurance advice drop your specific questions in the comments below and
+
+51
+00:04:17,047 --> 00:04:23,767
+ we will answer them in the next video until next time folks happy insurance hunting
+

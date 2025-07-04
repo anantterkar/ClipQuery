@@ -1,0 +1,404 @@
+1
+00:00:00,000 --> 00:00:08,500
+ Hello folks, welcome to Ditto Insurance. I am Shashank, your host, and today we are going to
+
+2
+00:00:08,500 --> 00:00:14,740
+ dive deep into one of the topics that is very crucial if you are out on a hunt for a health
+
+3
+00:00:14,740 --> 00:00:21,340
+ insurance. Folks, you're aware about the rising medical costs every year. Inflation is at 14-15%.
+
+4
+00:00:21,340 --> 00:00:27,620
+ So having health insurance at this moment is not an option anymore. It's a dire necessity. So
+
+5
+00:00:27,620 --> 00:00:38,380
+ So when you head out to buy that first health insurance of yours, your insurers or your advisors might keep telling you that, hey, these are the metrics that you need to follow.
+
+6
+00:00:38,500 --> 00:00:39,940
+ These are the features that you need to see.
+
+7
+00:00:39,940 --> 00:00:50,820
+ But one thing that they might miss out is telling you that the financial stability of the insurer is one of the biggest factors in deciding if you should go with that company or not.
+
+8
+00:00:50,820 --> 00:00:57,700
+ So to exactly decode this and take you through this world of incurred claim ratio or ICR,
+
+9
+00:00:58,160 --> 00:01:02,460
+ I have with me Rishabh Kashyap, who is the Senior Partnership Manager here at Ditto.
+
+10
+00:01:02,780 --> 00:01:03,500
+ Welcome, Rishabh.
+
+11
+00:01:03,620 --> 00:01:05,120
+ Thanks, Rishabh. Glad to be here once again.
+
+12
+00:01:05,400 --> 00:01:11,580
+ So Rishabh, today let's speak about ICR because it's one of the least spoken topics in the insurance industry.
+
+13
+00:01:11,580 --> 00:01:19,580
+ and I feel that it is important for people to know that a company with a certain range of ICR
+
+14
+00:01:19,580 --> 00:01:26,040
+ is better for them in a way. Now, take us through ICR in your experience.
+
+15
+00:01:26,520 --> 00:01:30,580
+ It's pretty straightforward. Let's think of it this way. What's your favorite restaurant in
+
+16
+00:01:30,580 --> 00:01:35,680
+ Bangalore? Where do you prefer the most to go? I think it would be Yuki, JP Nagar.
+
+17
+00:01:35,880 --> 00:01:37,760
+ Okay, why not Kormangala because there are two branches?
+
+18
+00:01:37,760 --> 00:01:44,120
+ Well, I think it's mainly because of the reviews of Yuki, JP Nagar that got me there.
+
+19
+00:01:44,120 --> 00:01:54,480
+ Right. So that just happens to be one of the factors, one of the metrics that you would consider that Yuki, JP Nagar is better than one of the other branches that they have in Kormangala.
+
+20
+00:01:54,480 --> 00:02:09,040
+ So similarly, it's the case with health insurance as well, where ICR is an indicative metric to showcase the financial strength or like a financial report card, so to say, for an insurance company.
+
+21
+00:02:09,660 --> 00:02:13,220
+ So basically, insurance companies collect premiums.
+
+22
+00:02:13,700 --> 00:02:28,232
+ Now how much premiums that they have collected versus how much claims that they paid out So that factor that ratio is what is called as an incurred claim ratio Understood So basically how much premiums they collect versus how much claims have dispersed
+
+23
+00:02:28,452 --> 00:02:29,392
+ So that's the ratio?
+
+24
+00:02:29,612 --> 00:02:30,572
+ That's the ratio, yes.
+
+25
+00:02:30,812 --> 00:02:35,772
+ So if an insurer has collected, let's say, about 100 crores worth of premium
+
+26
+00:02:35,772 --> 00:02:39,332
+ and they have paid out 80 crores as claims.
+
+27
+00:02:39,632 --> 00:02:43,112
+ Now that's an ICR or incurred claim ratio of 80%.
+
+28
+00:02:43,112 --> 00:02:44,372
+ Understood. Pretty straightforward.
+
+29
+00:02:44,372 --> 00:02:52,792
+ Now, we say that CSR has to be at least 90% or above. Is that the same for ICR?
+
+30
+00:02:52,792 --> 00:03:14,212
+ Indeed. So it's not one particular number or a higher value per se, but rather a definitive range. So a healthy range to consider for an insurance company's ICR would be anywhere between 50 to 80%. So as long as the company's ICR tends to be between 50 to 80, that's a good metric to look at.
+
+31
+00:03:14,212 --> 00:03:24,612
+ So anything less than that is a little concern because, let's say, insurers would be concerned more from the profit perspective rather than paying out the claims.
+
+32
+00:03:25,292 --> 00:03:31,192
+ And anything more than that, more than 80%, it would be too generous.
+
+33
+00:03:31,912 --> 00:03:39,052
+ So do you think that ICR can help the customers in recognizing the red flags in an insurer?
+
+34
+00:03:39,052 --> 00:03:52,912
+ Certainly. So to bring in a specific example of individual insurers, so let's take HTFC Ergo General Insurance and Aditya Birla General Insurance.
+
+35
+00:03:53,412 --> 00:03:59,432
+ Now, HTFC Ergo has a healthy range of around 80% as an ICR.
+
+36
+00:03:59,692 --> 00:04:04,492
+ Similarly with Aditya Birla, it stands to be somewhere around 65 to maybe 70%.
+
+37
+00:04:04,492 --> 00:04:15,392
+ But then you have standalone health insurance companies like Care Health Insurance or Niva Bupa, where their ICR stands to be between, I believe, 55 to 58%.
+
+38
+00:04:15,392 --> 00:04:33,132
+ Now, general insurance company can actually have a higher ICR or slightly more than standalone health insurance companies because any claims that they pay of a higher value for health insurance can be used as an offset by utilizing other insurance products that they sell.
+
+39
+00:04:33,392 --> 00:04:36,792
+ But you can't say the same about standalone health insurance companies
+
+40
+00:04:36,792 --> 00:04:56,025
+ because most of their products are towards the healthcare side So they will end up paying more in terms of the claims So which is why it tends to be lesser as compared to the ICR tends to be lesser as compared to general insurance companies Undisturbed And Rishabh I would you know at this point want
+
+41
+00:04:56,025 --> 00:05:00,505
+ to ask you a question. But before I come to that question, let me tell the viewers a little
+
+42
+00:05:00,505 --> 00:05:05,185
+ something about Ditto. Ditto is an insurance advisory platform. We are backed by Zerodha
+
+43
+00:05:05,185 --> 00:05:09,145
+ and we have over 10,000 plus reviews on Google.
+
+44
+00:05:09,325 --> 00:05:11,885
+ We have an average rating of 4.9 over 5
+
+45
+00:05:11,885 --> 00:05:15,445
+ and we have helped a lot of people not just purchase
+
+46
+00:05:15,445 --> 00:05:18,865
+ but also understand their insurance, compare them.
+
+47
+00:05:19,205 --> 00:05:22,185
+ We've helped them with porting and also provide free claim support.
+
+48
+00:05:22,385 --> 00:05:24,665
+ So folks, at no additional cost to you,
+
+49
+00:05:25,065 --> 00:05:27,945
+ you can book a free consultation with Ditto today
+
+50
+00:05:27,945 --> 00:05:29,665
+ with a special link in the description.
+
+51
+00:05:29,905 --> 00:05:31,605
+ Why do I say that this is a special link?
+
+52
+00:05:31,665 --> 00:05:34,985
+ Because this link is only meant for our YouTube audience.
+
+53
+00:05:34,985 --> 00:05:39,505
+ So go ahead and book your free consultation with us with a link in the description.
+
+54
+00:05:39,965 --> 00:05:41,285
+ Now, Rishabh, back to the question.
+
+55
+00:05:42,065 --> 00:05:48,285
+ What if an insurer has ICR, which is more, say more than 80-90%?
+
+56
+00:05:48,805 --> 00:05:50,905
+ That means they're being really generous, right?
+
+57
+00:05:51,205 --> 00:05:52,725
+ I mean, who wouldn't love that?
+
+58
+00:05:53,205 --> 00:06:01,265
+ Well, of course, the policyholders would benefit because every single claims that they bring in.
+
+59
+00:06:01,825 --> 00:06:04,225
+ So the insurer will eventually end up paying it.
+
+60
+00:06:04,225 --> 00:06:08,605
+ So one example is recently we did a video on Ifco Tokyo.
+
+61
+00:06:09,305 --> 00:06:12,785
+ So Ifco Tokyo's ICR shows 116%.
+
+62
+00:06:12,785 --> 00:06:16,685
+ Now, this might be overly generous, but this is not a good sign.
+
+63
+00:06:17,145 --> 00:06:24,785
+ So this basically shows that the insurance company is paying out more claims than the insurance premiums that they are collecting.
+
+64
+00:06:24,785 --> 00:06:35,125
+ So this means that the insurance company would constantly need recapitalization of funds in order to run their shop, keep the lights on.
+
+65
+00:06:35,505 --> 00:06:38,225
+ So take examples of PSU health insurance companies.
+
+66
+00:06:38,565 --> 00:06:45,645
+ So you have your Oriental Insurance, you have your New India Company, and also you have United Health Insurance.
+
+67
+00:06:45,905 --> 00:06:51,085
+ All these PSU companies tend to have more than 100% plus as incurred claim ratio.
+
+68
+00:06:51,865 --> 00:06:54,065
+ But it's a common trend as well,
+
+69
+00:06:54,165 --> 00:06:55,485
+ if anybody can actually observe,
+
+70
+00:06:55,665 --> 00:06:57,385
+ that PSU health insurance company
+
+71
+00:06:57,385 --> 00:06:59,465
+ need constant recapitalization of funds
+
+72
+00:06:59,465 --> 00:07:00,905
+ in order to stay afloat,
+
+73
+00:07:01,385 --> 00:07:16,377
+ which is also because of many welfare public welfare or social welfare related schemes which they pay out a lot of claim amounts for So this is why a higher incurred claim ratio is never a good thing
+
+74
+00:07:17,297 --> 00:07:19,637
+ Now, Rishabh, one thing I've noticed is that
+
+75
+00:07:19,637 --> 00:07:23,057
+ on Instagram, on your Google,
+
+76
+00:07:23,197 --> 00:07:26,037
+ you keep getting ads of these insurance companies.
+
+77
+00:07:26,497 --> 00:07:30,977
+ And one thing that they market well is that our CSR is the best.
+
+78
+00:07:30,977 --> 00:07:33,737
+ our CSR is amazing.
+
+79
+00:07:33,957 --> 00:07:36,237
+ It's over 90%, over 95%.
+
+80
+00:07:36,237 --> 00:07:38,937
+ They say that we have so many network hospitals.
+
+81
+00:07:39,917 --> 00:07:43,037
+ But why doesn't anyone talk about ICR?
+
+82
+00:07:43,137 --> 00:07:46,797
+ Because after knowing so much about ICR in depth,
+
+83
+00:07:47,017 --> 00:07:51,157
+ how important it is that your insurer doesn't run out of funds.
+
+84
+00:07:51,477 --> 00:07:52,957
+ Why is ICR less talked?
+
+85
+00:07:53,437 --> 00:07:56,357
+ So, CSR, ICR,
+
+86
+00:07:56,357 --> 00:07:59,817
+ these are all the pieces of the puzzle that you can use
+
+87
+00:07:59,817 --> 00:08:05,417
+ in order to make a conclusive decision as to which health insurance companies that you can reliably
+
+88
+00:08:06,217 --> 00:08:10,617
+ put your money into and ensure that you are financially secured and that the safety net
+
+89
+00:08:10,617 --> 00:08:16,937
+ is put in place so folks if you find it difficult to place all of the pieces of the puzzle together
+
+90
+00:08:16,937 --> 00:08:23,257
+ then let ditto do that for you all you have to do is go to the description you will find one link
+
+91
+00:08:23,257 --> 00:08:30,617
+ you just need to book a free call with us and in under two minutes we will assign you an IRDI
+
+92
+00:08:30,617 --> 00:08:35,817
+ certified advisor who will take you through the different nuances of insurance who will take you
+
+93
+00:08:35,817 --> 00:08:42,377
+ through the metrics of the insurers and we will help you select the best plan and all it takes
+
+94
+00:08:42,377 --> 00:08:49,417
+ is just 30 minutes of your time to secure you and your family so Rishabh thank you so very much for
+
+95
+00:08:49,417 --> 00:08:55,977
+ joining us and helping me and the audience here understand how important it is look at all of the
+
+96
+00:08:55,977 --> 00:09:02,457
+ metrics before deciding which insurer you should go with and also in depth going into icr and
+
+97
+00:09:02,457 --> 00:09:08,457
+ helping me understanding about it but thank you so much my pleasure yeah so folks i will see you in
+
+98
+00:09:08,457 --> 00:09:15,417
+ the next video we have a couple of exciting videos that are coming out we also have a couple of new
+
+99
+00:09:15,417 --> 00:09:20,617
+ policy reviews that are coming out. So stay tuned for that one, subscribe if you haven't,
+
+100
+00:09:20,617 --> 00:09:24,937
+ like this video and share this with someone who you think will benefit from this video.
+
+101
+00:09:25,577 --> 00:09:29,897
+ I will see you in the next one. Happy insurance hunting.
+

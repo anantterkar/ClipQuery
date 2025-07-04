@@ -1,0 +1,173 @@
+[0.00 - 1.64]  Yeah, so we're going to be talking about L-functions.
+[1.64 - 6.48]  I want to give give you an example first of all of one L-function that I think you probably
+[6.76 - 13.08]  would recognize and this is the Riemann Zeta function which depends on a complex number.
+[13.08 - 19.14]  S is x plus i y. i here is the square root of minus 1 and
+[19.76 - 26.52]  you can define it either by a sum over the integers, all the integers, all the positive ones, or
+[26.52 - 31.88]  Or, and this is a great discovery of Euler, you can write it as a product over the prime numbers.
+[32.12 - 35.90]  And so the zeta function encodes information about the primes.
+[36.12 - 41.92]  It contains all the primes, and if you can unravel how the information in the zeta function is encoded,
+[42.08 - 43.80]  you can determine properties of the primes.
+[43.96 - 45.02]  That's one of the L functions.
+[45.18 - 49.22]  Now let me tell you a little bit more about the Riemann zeta function, because that's going to be part of the story.
+[49.38 - 54.52]  So the Riemann zeta function is defined as a sum over the integers or a product over the primes,
+[54.52 - 59.86]  and these these formally work if x is greater than 1. But it turns out you can
+[60.32 - 64.42]  find formulae that match these when x is greater than 1,
+[64.86 - 69.08]  when x is less than 1 work as well, and here's what the Riemann zeta function looks like.
+[69.32 - 75.36]  So these formally work to the right of the line x equals 1, so they work out here.
+[77.02 - 81.22]  And they tell you the value of the zeta function anywhere in this region.
+[81.22 - 86.74]  Now it turns out the zeta function has this amazing symmetry which was discovered by Riemann,
+[87.04 - 92.60]  which says that the line that I've drawn in blue there that passes through the point one half,
+[92.76 - 94.74]  that's a symmetry line of the Riemann zeta function.
+[94.96 - 98.38]  So if I know the value of the zeta function at some point here,
+[98.92 - 103.84]  I reflect that point through the blue line to get a point here, and know its value here.
+[104.28 - 105.46]  So I can determine that very easily.
+[105.46 - 108.56]  So Riemann's reflection formula, the symmetry formula,
+[108.56 - 113.76]  tells us that because I know the zeta function in this range, I also know it in this range.
+[113.82 - 114.52]  That's the reflection.
+[114.84 - 117.78]  So that just leaves this strip, which we don't understand.
+[118.00 - 120.24]  And this strip is where the zeta function is really mysterious.
+[120.68 - 127.26]  We know that in this strip, there are infinitely many points where the zeta function takes the value 0.
+[127.26 - 129.92]  The belief is, and this is called the Riemann hypothesis,
+[130.18 - 136.38]  that these points where the zeta function takes the value 0 all lie exactly on the symmetry line.
+[136.38 - 138.88]  And this is called the Riemann hypothesis.
+[139.50 - 142.00]  And this is one of the great mysteries of mathematics.
+[142.64 - 148.12]  Riemann hypothesised this in 1859, and it's been tested hugely since.
+[148.46 - 153.80]  Professor, it's well known in mathematics that if any mathematician can prove the Riemann hypothesis,
+[154.48 - 156.44]  he or she is destined for greatness.
+[156.70 - 156.84]  Yeah.
+[157.24 - 157.62]  Why?
+[157.86 - 163.24]  Well, because the Riemann zeta function encodes information about the prime.
+[163.24 - 168.76]  So if we know the positions of the zeros, that tells us really important information about the prime numbers.
+[168.90 - 171.44]  What information? What does it tell you that you don't already know?
+[172.00 - 176.58]  It tells us things we already suspect because we sort of believe the Riemann hypothesis is true,
+[176.92 - 178.38]  but there are things we can't prove.
+[178.78 - 182.48]  So, for example, how many primes are there up to a trillion?
+[182.80 - 196.81]  We have a formula for that that we believe is true but we can only prove that formula if we know the Riemann hypothesis is true So it like a whole bunch of houses would suddenly have a foundation Absolutely and there are whole books written assuming the truth of the Riemann hypothesis
+[196.81 - 202.01]  So the foundations of our understanding of the primes would disappear if the Riemann
+[202.01 - 203.67]  hypothesis turned out to be false.
+[203.67 - 207.75]  It's known there are infinitely many zeros of the Riemann zeta function inside the critical
+[207.75 - 212.87]  strip and it's known that at least 40% of those do lie on the symmetry line.
+[212.87 - 219.69]  known, and this is a result of hugely extensive computations, that the first 10 trillion zeros
+[219.69 - 225.65]  lie exactly on the symmetry line. That's the first 10,000 billion. It's known that batches
+[225.65 - 232.69]  of zeros much higher up, beyond the 10 trillionth, lie on the line. So I think the world record
+[232.69 - 238.79]  at the moment is there's a batch of zeros up beyond the 10 to the 36th zero. That is
+[238.79 - 242.95]  the billion billion billion billionth zero, somewhere up there there's a whole batch of
+[242.95 - 247.25]  them which we know lie exactly on the line. So people have put a huge effort into this.
+[247.25 - 252.15]  And there's a long history of this. Alan Turing, when he built the first electronic computer,
+[252.15 - 255.77]  one of the first things he did was compute the zeros of the zeta function. He found about
+[255.77 - 260.11]  the first thousand lie on the line. Professor, if a mathematician one day finds
+[260.11 - 266.41]  a zero in the strip but not on the line, is that mathematician going to be a hero or a
+[266.41 - 272.49]  Well, they would certainly be very famous, and I think people would, mathematicians are very sanguine about this.
+[272.49 - 274.99]  They'll just accept the truth. They want to know the truth.
+[275.47 - 281.29]  So that person would be famous, but I think it would be a kind of ugly kind of fame, not a beautiful kind of fame.
+[281.43 - 283.79]  So we've got these properties, and this is what I want to emphasise.
+[283.85 - 288.67]  We can write the zeta function as a sum over the integers, or as a product over the primes,
+[288.89 - 293.05]  and the zeta function has a symmetry line, a reflection symmetry line,
+[293.05 - 298.65]  and we believe that all the zeros of the zeta function around that line lie exactly on it.
+[298.91 - 301.29]  This is one of the great mysteries in mathematics,
+[301.47 - 304.73]  and people have spent 150-odd years thinking about this.
+[304.85 - 309.33]  And one natural way, if you're given a mystery, is to try to understand,
+[309.49 - 311.49]  well, is this a more general property?
+[311.65 - 315.29]  So are there other functions which look like the Riemann zeta function?
+[315.75 - 319.33]  And maybe by finding lots of those functions and comparing them,
+[319.33 - 323.47]  That tells you the essential properties that make the Riemann hypothesis true.
+[323.47 - 327.85]  Maybe allows you to prove it. So an example would be, you know, if you think
+[327.85 - 331.81]  about evolution, Darwin wanted to sort of establish evidence for evolution, so he
+[331.81 - 335.45]  goes to the Galapagos Islands and he has to find lots of finches that are all
+[335.45 - 339.83]  very similar but not identical, and by making comparisons of the similarities
+[339.83 - 343.49]  and the differences you then understand the essential properties that led them
+[343.49 - 348.89]  to sort of evolve as they did. So we want to find the cousins of the Riemann zeta
+[348.89 - 352.43]  function to see whether there are any. What might you do? Well you might look at
+[352.43 - 355.79]  this sum of the integers and you might change some of these plus signs into
+[355.79 - 361.13]  minus signs and see, well, can you change, have any combination of pluses and
+[361.13 - 365.01]  minuses here and it turns out it's very rare that by changing some of these
+[365.01 - 370.33]  pluses into minuses you can write this sum, the resulting sum, as a product over
+[370.33 - 373.43]  primes that will be slightly different to this product but would resemble it
+[373.43 - 385.63]  and that you have something that had a symmetry line So it very very rare that that happens So here one example of one Let me go back to the Riemann zeta function We going to split the primes up into two classes
+[386.33 - 388.39]  Two will always be special. We'll leave that as it is.
+[388.81 - 393.63]  But the odd primes will either be, if you divide them by 4,
+[393.97 - 396.75]  they'll have either a remainder of 1 or 3.
+[397.11 - 399.05]  So you divide 3 by 4, well, the remainder's 3.
+[399.35 - 403.57]  Divide 5 by 4, the remainder's 1, because 5 is 4 plus 1.
+[403.57 - 415.23]  7, divide that by 4, the remainder is 3. 11 is 3 and 13 is 1. So the ones that are divisible where the remainder is 3 will flip their sign.
+[415.45 - 420.41]  So we put that at a 1 there, we'll put a 1 there, a 1 there and we'll leave the other two.
+[420.55 - 429.93]  Then that gives you an L function which has a symmetry property. If you expand these products out you get a sum over the integers, exactly like the Riemann Zeta function.
+[429.93 - 433.49]  So this is an example of a function which is an L-function.
+[433.83 - 435.95]  A lot of these were discovered in the 19th century.
+[436.31 - 437.63]  There are infinitely many of them.
+[438.19 - 439.29]  You said they were rare.
+[440.49 - 443.47]  Yeah, but despite the fact they're infinitely many,
+[444.05 - 449.57]  they're extremely rare amongst all possible combinations of pluses and minuses that you can have there.
+[449.71 - 453.05]  So we know there are infinitely many other functions that look like the Riemann zeta function.
+[453.17 - 454.85]  You can write them as a sum over the integers.
+[455.45 - 457.37]  You can write them as a product over the primes.
+[457.37 - 460.73]  They have a symmetry line, and we believe they all have a Riemann hypothesis.
+[461.49 - 462.87]  So that was the 19th century.
+[463.33 - 469.39]  Then in the 20th century, people found other examples of functions that have those properties.
+[469.55 - 473.15]  You can write them as sums over the integers or products over the primes.
+[473.39 - 476.49]  They have a symmetry line, and we believe they have a Riemann hypothesis.
+[476.69 - 478.99]  And one of the heroes in this story is Ramanujan.
+[478.99 - 500.45]  So Ramanujan was studying the following function, x times 1 minus x to the power of 24, 1 minus x squared to the power of 24, times 1 minus x cubed to the power of 24, times 1 minus x to the 4 to the power of 24, etc.
+[500.77 - 501.43]  You get the point.
+[501.43 - 506.59]  And what he discovered was that he could write this as a sum of powers of x.
+[506.59 - 511.43]  So it's 1 times x minus 24 times x squared.
+[511.71 - 512.81]  This is something you can do at home.
+[512.89 - 514.23]  You just multiply this thing out.
+[514.23 - 526.61]  Minus 24 times x squared plus 2, 5, 2 times x cubed minus 1, 4, 7, 2 times x to the power of 4, etc.
+[526.75 - 530.19]  This just goes on and you get these beautiful whole numbers coming out.
+[530.83 - 531.57]  Now here's the miracle.
+[531.83 - 534.13]  2 times 3 is 6.
+[534.13 - 543.85]  minus 24 times 252 is minus 6048. So these numbers have the property that for
+[543.85 - 553.65]  example 3 times 5 is 15 and if I go out to the 15th number in this series the
+[553.65 - 561.97]  the the the coefficient there the integer that appears is 252 times 4830.
+[561.97 - 576.52]  This meant you could associate an L function with these things So here what you do You write 1 minus 24 over 2 to the s plus 2 5 2 over 3 to the s
+[577.58 - 581.80]  minus 1 4 7 2 over 4 to the s
+[582.86 - 588.82]  plus 4 8 3 0 over 5 to the s, etc.
+[588.82 - 597.36]  And this series follows from Ramanujan's observation, and a couple more observations that I won't sort of explain in any more detail.
+[597.56 - 603.66]  It follows that you can write this series as a product over primes, just as we did for the Riemann zeta function.
+[603.66 - 610.58]  You can plot that in the complex plane, and it has a symmetry line, exactly like the Riemann zeta function does,
+[610.76 - 615.04]  and the zeros of this function are believed to satisfy a Riemann hypothesis.
+[615.04 - 618.86]  Now these functions are a class of functions called modular forms.
+[619.12 - 627.32]  They have certain symmetry properties which we believe give rise to the kind of general patterns that you see in the Riemann zeta function.
+[627.46 - 631.18]  That is a symmetry line and zeros on that line, a Riemann hypothesis.
+[631.76 - 633.72]  And these were studied throughout the 20th century.
+[634.38 - 642.14]  And Andrew Wiles in his great work on Fermat's last theorem used this connection between modular forms, that is functions like this,
+[642.14 - 647.64]  and L functions, that is functions like this, to prove Fermat's last theorem.
+[647.82 - 651.18]  For all these L functions, we believe there's a Riemann hypothesis.
+[651.84 - 654.56]  So the big goal is to say, well, can we find the patterns?
+[654.68 - 662.20]  Can we see any similarities that would give us a clue as to why the Riemann hypothesis is true for any of them?
+[663.00 - 669.06]  And one of the things that's been done recently is to produce a huge database of millions of these L functions
+[669.06 - 672.82]  with all their properties tabulated in a very clear and simple way.
+[673.32 - 676.34]  And basically the idea is to throw this out to the world and say,
+[676.68 - 678.34]  can you help us find the pattern?
+[678.82 - 681.24]  And what you'll find there is the Riemann zeta function,
+[681.70 - 683.68]  you'll find Ramanujan's L-function,
+[684.12 - 686.60]  you'll find the L-functions that Andrew Wiles studied,
+[686.90 - 689.66]  you'll find even more exotic and weird L-functions
+[689.66 - 692.80]  that we believe all have a Riemann hypothesis.
+[693.70 - 696.86]  And if you go to this website, you'll find their zeros,
+[696.86 - 698.82]  you'll find plots of these L-functions,
+[699.06 - 699.90]  What's the pattern?
+[699.90 - 702.18]  If I go to this database, though, I'm not going to make a
+[702.18 - 702.88]  breakthrough, am I?
+[702.88 - 705.50]  Surely this is only a resource for mathematicians.
+[705.50 - 709.00]  Well, it's a resource for mathematicians, but I think
+[709.00 - 712.66]  these properties are accessible to a wide
+[712.66 - 713.62]  range of people.
+[713.62 - 716.12]  This database is set up so if you click on any technical
+[716.12 - 718.92]  word, up comes an explanation of that word.
+[718.92 - 721.04]  Now, you probably need to know some mathematics to understand
+[721.04 - 724.02]  that, but looking at the pictures is something that
+[724.02 - 725.06]  anyone can do.
+[725.06 - 727.06]  And somewhere in there, there is a pattern that
+[727.06 - 729.48]  mathematicians haven't spotted.
+[729.48 - 732.38]  So it may well be that somebody else spots it.
+[732.38 - 734.22]  It's not likely, but it is possible.
+[736.64 - 738.98]  Too big.
+[738.98 - 740.96]  There's a little rhyme for this.
+[740.96 - 744.22]  The rhyme is, Shebisev said it, and I'll say it again,
+[744.22 - 746.50]  there's always a prime between n and 2n.
+[746.50 - 749.00]  Riemann did precisely that.
+[749.00 - 752.92]  He explained how to extend this function to all possible
+[752.92 - 754.66]  values, except for one.
+[754.66 - 757.72]  So there's only one value where there's nothing you can do.

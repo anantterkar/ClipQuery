@@ -1,0 +1,528 @@
+1
+00:00:00,000 --> 00:00:08,640
+ Hi folks, I'm Shashank. I work with Ditto Insurance. We are an insurance advisory platform
+
+2
+00:00:08,640 --> 00:00:12,960
+ where we deal with health and term insurance plans. Now, if you are out here looking for
+
+3
+00:00:12,960 --> 00:00:18,960
+ quality advice, then we recommend you to book a free of course consultation with our advisors
+
+4
+00:00:18,960 --> 00:00:23,080
+ with the link in the description. With the introduction out of the way, folks, let me
+
+5
+00:00:23,080 --> 00:00:29,520
+ now introduce our guest today, Sushant. He is the Senior Program Manager here at Ditto.
+
+6
+00:00:29,520 --> 00:00:34,840
+ And today we are going to talk about Aditya Birla's Sun Life Insurance. Sushant, welcome
+
+7
+00:00:34,840 --> 00:00:39,720
+ to the podcast. Thanks for having me. So Sushant, let's start with the introduction and the
+
+8
+00:00:39,720 --> 00:00:44,600
+ basic metrics, how they're operating. So take us through the details. So they actually do
+
+9
+00:00:44,600 --> 00:00:51,600
+ have quite an interesting story. Aditya Birla Sun Life was established in the year 2000.
+
+10
+00:00:51,600 --> 00:00:56,280
+ And it's actually a joint venture between Aditya Birla Capital and Sun Life Insurance
+
+11
+00:00:56,280 --> 00:01:01,240
+ Inc. from Canada. So yeah, and I think over the last 20-25 years, they've really established
+
+12
+00:01:01,240 --> 00:01:07,080
+ themselves by offering a very diversified portfolio of plans, ranging from term insurance
+
+13
+00:01:07,080 --> 00:01:12,440
+ to ULIPs to endowments, even child plans and retirement plans as well. So I think they've
+
+14
+00:01:12,440 --> 00:01:16,280
+ really tried to cater to pretty much all the sort of sectors of the audience.
+
+15
+00:01:16,280 --> 00:01:21,640
+ Alright, alright. And how are they operationally? I think if I were to talk about their metrics,
+
+16
+00:01:21,640 --> 00:01:25,880
+ first if we look at claim settlement ratio, for example, quite good. In the recent years,
+
+17
+00:01:25,880 --> 00:01:30,760
+ their average has been just over 98%, which is well above the industry average and a really
+
+18
+00:01:30,760 --> 00:01:35,120
+ good number. If I were to talk about amount settlement ratio, pretty solid in that front
+
+19
+00:01:35,120 --> 00:01:41,960
+ too, about 94% change, which is pretty good. Coming to the complaints volume, very reasonable.
+
+20
+00:01:41,960 --> 00:01:46,200
+ For every 10,000 claims, they've had just five complaints. Once again, that's well below
+
+21
+00:01:46,200 --> 00:01:50,120
+ the industry average. And in terms of annual business, they've been growing steadily year
+
+22
+00:01:50,120 --> 00:01:54,760
+ on year. So we're looking at about 6,500 crores of annual business per year.
+
+23
+00:01:54,760 --> 00:01:59,880
+ Okay, pretty solid metrics over there. Now let's talk about their offerings in terms of term plans.
+
+24
+00:02:00,440 --> 00:02:05,160
+ So they have about three term plans. If I were to pick their flagship one, which is called DigiShield.
+
+25
+00:02:05,960 --> 00:02:10,280
+ Under that is about 10 variants or options that you can play around with. So one would be a return
+
+26
+00:02:10,280 --> 00:02:14,840
+ of premium variant, where you get your money back at the end of the plan. One would be a whole life
+
+27
+00:02:14,840 --> 00:02:20,440
+ cover, where you're allowed to be insured for the entirety of your life, meaning until 99 or 100
+
+28
+00:02:20,440 --> 00:02:25,320
+ years of age. If I were to talk about the age of entry for this plan, it's about 18 to 65.
+
+29
+00:02:26,280 --> 00:02:30,040
+ For some insured, you're allowed to buy a minimum of 30 lakhs and there's no upper limit,
+
+30
+00:02:30,040 --> 00:02:34,920
+ which is quite interesting. Most companies set a cap that you can't buy more than 10, 20, 30 crores.
+
+31
+00:02:35,480 --> 00:02:38,840
+ Here there is no cap, of course, subject to your eligibility and underwriting.
+
+32
+00:02:38,840 --> 00:02:43,080
+ In terms of riders and optional benefits that they offer, there are some interesting features
+
+33
+00:02:43,080 --> 00:02:47,560
+ there too. They have an accidental death and disability benefit, wherein for an accidental
+
+34
+00:02:47,560 --> 00:02:52,200
+ death you're paid a higher sum in short. For an accident disability, you're paid a percentage of
+
+35
+00:02:52,200 --> 00:02:56,760
+ the rider based on the disability that happens and this is all clearly listed out. They have a
+
+36
+00:02:56,760 --> 00:03:00,760
+ critical illness variant, even though they have two options. So one is a critical illness accelerated
+
+37
+00:03:00,760 --> 00:03:05,960
+ variant covering about 42 illnesses and then there's a normal critical illness variant covering just
+
+38
+00:03:05,960 --> 00:03:10,280
+ four critical illnesses. So I feel there maybe they probably are lacking a little bit, whereas
+
+39
+00:03:10,280 --> 00:03:15,800
+ other brands offer the 20, 30, 40 illnesses. So that's probably one place where I would say
+
+40
+00:03:15,800 --> 00:03:20,200
+ they're slightly lacking. They also offer another free benefit called the life stage benefit,
+
+41
+00:03:20,200 --> 00:03:24,280
+ where you're allowed to increase your sum insured up to 100% in the future based on certain life
+
+42
+00:03:24,280 --> 00:03:29,800
+ stages like marriage and having kids. This plan also comes with an inbuilt terminal illness benefit.
+
+43
+00:03:29,800 --> 00:03:34,280
+ In case someone's terminally ill, they can claim an accelerated amount of their term insurance.
+
+44
+00:03:35,400 --> 00:03:39,960
+ Lastly, they have some unique features such as a surgical care rider, meaning in case you require
+
+45
+00:03:39,960 --> 00:03:44,520
+ a surgery of some sorts, diagnosed and approved by a medical professional, they will pay up a
+
+46
+00:03:44,520 --> 00:03:48,440
+ certain amount to financially support you. And they also have a hospice care benefit,
+
+47
+00:03:48,440 --> 00:03:53,400
+ which very few insurance companies offer, which is more of a health insurance benefit if you ask me.
+
+48
+00:03:53,400 --> 00:03:57,880
+ But how this feature works is once you're admitted to the hospital, if you're there for more than two
+
+49
+00:03:57,880 --> 00:04:02,600
+ or three days, they give you a certain daily cash allowance. Daily cash is what we call it in health
+
+50
+00:04:02,600 --> 00:04:07,320
+ insurance terms, but in term insurance they call it the hospice care benefit. So you're given a daily
+
+51
+00:04:07,320 --> 00:04:12,280
+ allowance every day to kind of help you with miscellaneous expenses. But yeah, I think that
+
+52
+00:04:12,280 --> 00:04:17,000
+ more or less summarizes the DigiShield plan. DigiShield is a really, really comprehensive
+
+53
+00:04:17,000 --> 00:04:22,520
+ plan. Now, I've also gone through the brochure and they also have something called as an income
+
+54
+00:04:22,520 --> 00:04:27,560
+ suraccia plan. Some more details on that? This actually is a very interesting take on term
+
+55
+00:04:27,560 --> 00:04:31,720
+ insurance. They've really approached it from a different angle altogether. So even under this,
+
+56
+00:04:31,720 --> 00:04:38,120
+ there are two variants. One is called the fixed income plan, wherein they focus on giving your
+
+57
+00:04:38,200 --> 00:04:42,920
+ nominees the death benefit in the form of monthly income. So how they've done it is that you get to
+
+58
+00:04:42,920 --> 00:04:46,440
+ choose what amount you want your nominees to receive. For example, you say that I want them
+
+59
+00:04:46,440 --> 00:04:50,920
+ to receive one lakh rupees per month in case something were to happen to me. They offer this
+
+60
+00:04:50,920 --> 00:04:56,760
+ for a fixed tenure of 10 years or the remaining of the policy tenure, whichever is higher.
+
+61
+00:04:56,760 --> 00:05:01,560
+ So if I were to give you an example, let's say I buy a term insurance for 30 years and the person
+
+62
+00:05:01,560 --> 00:05:06,360
+ or the insured member passes away in the 15th year. Now his family will receive one lakh per month for
+
+63
+00:05:06,360 --> 00:05:11,240
+ the next 15 years because that was the remaining of the policy tenure. This is one example. So the
+
+64
+00:05:11,240 --> 00:05:15,720
+ other one is the increasing income protection variant that they have. Here how it works is
+
+65
+00:05:15,720 --> 00:05:20,440
+ whatever income you've decided that your family should receive, that amount will keep increasing
+
+66
+00:05:20,440 --> 00:05:25,400
+ by 5% year on year from the date you've bought the plan. The tenure here remains the same. The
+
+67
+00:05:25,400 --> 00:05:31,000
+ payout tenure is 120 months or 10 years basically. So meaning if someone has bought a plan and five
+
+68
+00:05:31,000 --> 00:05:35,560
+ years later he were to pass away. Now initially when he bought the plan, he opted for one lakh
+
+69
+00:05:35,560 --> 00:05:40,600
+ rupees as monthly income. But in those five years this has been compounding. So now five years later
+
+70
+00:05:40,600 --> 00:05:46,600
+ when something happens, his family is eligible to receive 1.21 lakhs or so approximately per month.
+
+71
+00:05:46,600 --> 00:05:51,480
+ And this will still keep increasing as it's paid out until it reaches an upper cap of about 1.5
+
+72
+00:05:51,480 --> 00:05:56,920
+ lakh rupees. So basically 1.5 times of the income you asked for. Should you have asked for 2 lakhs,
+
+73
+00:05:56,920 --> 00:06:02,120
+ it will grow until it reaches 3 lakhs. 1.5x essentially. Understood. Quite interesting
+
+74
+00:06:02,120 --> 00:06:07,320
+ variance. I think something unheard of altogether in term insurance. True. But if you were to ask me
+
+75
+00:06:07,320 --> 00:06:13,000
+ and we even consulted with a few financial experts, they're also of the opinion that look maybe this
+
+76
+00:06:13,000 --> 00:06:18,040
+ variant isn't the most helpful or beneficial. And like I said I'm of the same opinion as well.
+
+77
+00:06:18,040 --> 00:06:22,200
+ I believe with term insurance or life insurance should have a lump sum payout to the nominees or
+
+78
+00:06:22,200 --> 00:06:26,680
+ family members. Exactly. Reason being this gives them the flexibility to do what they want with the
+
+79
+00:06:26,680 --> 00:06:30,920
+ money. You're not leaving it with someone and saying that look I'm happy with the lack of month.
+
+80
+00:06:30,920 --> 00:06:35,480
+ I'd rather the family gets the one or two crores and one if they have any major debts they can
+
+81
+00:06:35,480 --> 00:06:40,200
+ clear them off. They have some big expenses coming up it might support them. Or two at least they can
+
+82
+00:06:40,200 --> 00:06:44,680
+ open something as simple as an FD and kind of generate six seven percent interest every year.
+
+83
+00:06:44,680 --> 00:06:49,000
+ Right. So you have a steady flow of income while you also have that corpus line as a security in
+
+84
+00:06:49,000 --> 00:06:53,960
+ the bank. Makes sense. So from a financial standpoint I would still always go for a lump sum option.
+
+85
+00:06:54,680 --> 00:06:58,440
+ But I think just how interesting and unique these were I think definitely worth discussing.
+
+86
+00:06:58,440 --> 00:07:04,760
+ Definitely definitely worth mentioning. Now we've covered both these plans. Let's quickly
+
+87
+00:07:04,760 --> 00:07:10,040
+ go into the third plan. So the last variant is called the salaried term plan. As the name suggests
+
+88
+00:07:10,040 --> 00:07:14,600
+ is something that's specifically for salaried individuals only. It comes with some unique
+
+89
+00:07:14,600 --> 00:07:19,240
+ benefits but in a way it's also similar to their DG Shield plan. Okay. Let's say in terms of the
+
+90
+00:07:19,240 --> 00:07:24,360
+ age of entry firstly right 18 to 65 is the maximum age of entry. The duration they were allowed a
+
+91
+00:07:24,360 --> 00:07:30,520
+ maximum tenure of up to 70 years. That's the capping they've set. In terms of the cover amount
+
+92
+00:07:30,520 --> 00:07:35,560
+ 25 lakhs is the bare minimum you can choose. And there's no upper limit of course subject to
+
+93
+00:07:35,560 --> 00:07:39,640
+ underwriting and your financial eligibility. It comes with the free rider of terminalist benefits
+
+94
+00:07:39,640 --> 00:07:43,240
+ so that's an added advantage as well. Pricing I think is where they really stand out right.
+
+95
+00:07:43,240 --> 00:07:47,400
+ They've they've really designed this in such a way that they offer some additional discounts
+
+96
+00:07:47,400 --> 00:07:52,520
+ for salaried individuals and also on the basis of gender. Okay. Like we've seen before in term
+
+97
+00:07:52,520 --> 00:07:57,720
+ insurance for females the prices can be lower right considering a higher mortality rate and
+
+98
+00:07:57,720 --> 00:08:02,200
+ longer life expectancy. So these are some of the broad sort of overview if I had to cover them.
+
+99
+00:08:02,200 --> 00:08:07,160
+ In terms of specific pricing though if I had to talk about some numbers for a 25 year old male
+
+100
+00:08:07,160 --> 00:08:13,720
+ buying a one crore term plan the salaried term plan would cost about 9500 or so per year.
+
+101
+00:08:14,280 --> 00:08:19,880
+ Their DG Shield plan would cost about 11000 change and the income plan that we spoke about
+
+102
+00:08:19,880 --> 00:08:26,200
+ that would be somewhere around 25-26000 per year for an income of about 50 000 rupees per month
+
+103
+00:08:26,200 --> 00:08:31,800
+ should something happen. So this is what you can see from the pricing that yes this one is priced
+
+104
+00:08:31,800 --> 00:08:36,280
+ quite competitively right even compared to the DG Shield plan. Correct. And in case if I were
+
+105
+00:08:36,280 --> 00:08:42,840
+ to increase the age of the individual to 35 from 25 what was 9000 change would now become 14000.
+
+106
+00:08:43,640 --> 00:08:49,800
+ The DG Shield which used to be 11 would be about 15-16 and the income plan which is about 25 000
+
+107
+00:08:49,800 --> 00:08:55,880
+ earlier is now looking at about 28-29 000. So more or less a proportion increase nothing significant
+
+108
+00:08:55,880 --> 00:09:02,200
+ sort of stands out here. Alright so now in terms of the recommendations that we have at the you
+
+109
+00:09:02,200 --> 00:09:08,920
+ know max life HDFC life so how are the premiums priced based on that. So once again let me give
+
+110
+00:09:08,920 --> 00:09:15,720
+ it you with an example of the same profile a 25 year old one crore plan till 65. The DG Shield
+
+111
+00:09:15,800 --> 00:09:23,240
+ plan was about 11500-1600. The salary term plan was about 9500 or so. This is the benchmark we've
+
+112
+00:09:23,240 --> 00:09:28,040
+ set for Atia Birla. Coming to max life they're reasonably priced quite close somewhere about
+
+113
+00:09:28,040 --> 00:09:36,200
+ 10100 a year. ICIC is a bit higher at about 10900 and HDFC is even more expensive than the DG Shield
+
+114
+00:09:36,200 --> 00:09:41,480
+ plan they're about 11900. So I think yeah this is what it would compare like you can see they're
+
+115
+00:09:41,480 --> 00:09:46,680
+ quite competitive nothing really stands out or no added advantage either. So they're offering
+
+116
+00:09:46,680 --> 00:09:51,080
+ similar prices but they're also you know competing with some of the largest players out there in the
+
+117
+00:09:51,080 --> 00:09:58,600
+ industry. Alright so finally what's the final word on Atia Birla's and life insurance. So I
+
+118
+00:09:58,600 --> 00:10:03,160
+ think based on our analysis they really do stand out as a solid player right like we just looked
+
+119
+00:10:03,160 --> 00:10:06,600
+ at in terms of pricing as well they're able to compete with some of the large players out there.
+
+120
+00:10:07,400 --> 00:10:11,560
+ In terms of features they're quite comprehensive they offer the accident plans, their waiver of
+
+121
+00:10:11,560 --> 00:10:16,520
+ premium coverage, critical illness all the benefits right that are generally available out there.
+
+122
+00:10:16,520 --> 00:10:21,400
+ Coming to the operational metrics like we saw complaint volume as well was quite low in fact
+
+123
+00:10:21,400 --> 00:10:26,360
+ lower than even some of these brands at about five complaints every 10 000. So honestly from
+
+124
+00:10:26,360 --> 00:10:30,920
+ that front no complaints or no issues as such. The only thing I would say is that yes there is
+
+125
+00:10:30,920 --> 00:10:35,880
+ smaller player when compared to the top three or top five out there. So that's something that's
+
+126
+00:10:35,880 --> 00:10:39,960
+ up to user right whether he wishes to take that risk or would he want more peace of mind going
+
+127
+00:10:39,960 --> 00:10:44,040
+ with one of the larger established players out there. Understood. But other than that nothing
+
+128
+00:10:44,040 --> 00:10:48,280
+ against them they really are a good option available. That's great that's a that's a good
+
+129
+00:10:48,280 --> 00:10:54,920
+ insight Sushant and thank you so much for going into detail of Atia Birla's and life insurance.
+
+130
+00:10:54,920 --> 00:10:59,720
+ Now folks if you enjoyed the video don't forget to drop a like and subscribe if you haven't already
+
+131
+00:10:59,720 --> 00:11:04,920
+ and if you have any doubts please put them in the comments below and we will see you in the next one.
+
+132
+00:11:04,920 --> 00:11:09,240
+ Until then happy insurance hunting.
+

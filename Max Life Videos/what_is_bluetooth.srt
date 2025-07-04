@@ -1,0 +1,256 @@
+1
+00:00:00,000 --> 00:00:02,880
+ Bluetooth is literally indistinguishable from magic.
+
+2
+00:00:02,880 --> 00:00:07,840
+ Give an iPhone 7 and some AirPods to a Victorian child and watch them get burned at the stake
+
+3
+00:00:08,000 --> 00:00:13,800
+ just for holding that stuff. Like we're for real just here on a big rock with sticks and water and made Bluetooth from that.
+
+4
+00:00:13,800 --> 00:00:16,600
+ What the flip is going on here? Well, it's actually quite simple.
+
+5
+00:00:17,100 --> 00:00:23,700
+ No, it's not. That was a lie. This stuff is whack. To begin, your phone and earbuds communicate with light. Not this light,
+
+6
+00:00:23,800 --> 00:00:28,040
+ not this light either. It's like a freaky sort of light. On the electromagnetic spectrum,
+
+7
+00:00:28,040 --> 00:00:30,660
+ From the human eye can see 400 to 600 nanometers.
+
+8
+00:00:30,660 --> 00:00:33,360
+ Zoom out and you'll notice the human eye is actually blind.
+
+9
+00:00:33,360 --> 00:00:38,960
+ The light that Bluetooth uses is over here, specifically 121mm through 124mm.
+
+10
+00:00:38,960 --> 00:00:42,940
+ Not only is this light invisible to the human eye, but the waves are so long that it can
+
+11
+00:00:42,940 --> 00:00:46,160
+ pass through walls like how visible light passes through glass.
+
+12
+00:00:46,160 --> 00:00:49,380
+ Cool, but how does light allow me to listen to Shakira?
+
+13
+00:00:49,380 --> 00:00:50,520
+ Ones and zeros.
+
+14
+00:00:50,520 --> 00:00:55,040
+ Say 121mm is purple and 124mm is green.
+
+15
+00:00:55,040 --> 00:00:57,980
+ If your phone wants to send a 1 to your earbuds, your antenna turns purple.
+
+16
+00:00:58,420 --> 00:01:01,460
+ The antenna on the earbuds sees this and tells the microchip in the earbuds,
+
+17
+00:01:01,880 --> 00:01:02,920
+ Hey, it's purple.
+
+18
+00:01:03,040 --> 00:01:04,380
+ And then the microchip writes down a 1.
+
+19
+00:01:04,460 --> 00:01:07,880
+ If the phone wants to send a 0, the antenna turns green and the same thing happens.
+
+20
+00:01:08,000 --> 00:01:09,940
+ This happens about a million times a second.
+
+21
+00:01:10,060 --> 00:01:14,060
+ Okay, so now we know how to communicate, but this brings up about a million problems.
+
+22
+00:01:14,180 --> 00:01:17,480
+ For example, if my bro is next to me listening to L. Taylor Swift
+
+23
+00:01:17,480 --> 00:01:20,200
+ while I'm hearkening to the songs of Shakira like a real man,
+
+24
+00:01:20,200 --> 00:01:23,580
+ how does my earbuds know to ignore the Taylor Swift and only play Shakira?
+
+25
+00:01:23,580 --> 00:01:25,440
+ Well, this problem has a couple of solutions.
+
+26
+00:01:25,720 --> 00:01:28,480
+ First of all, it's not actually just purple and green.
+
+27
+00:01:28,740 --> 00:01:32,860
+ There are 79 separate sections or channels within the range of purple and green.
+
+28
+00:01:33,260 --> 00:01:36,160
+ Each channel has its own specific wavelength for 1 and 0.
+
+29
+00:01:36,360 --> 00:01:40,380
+ So while you might be in channel 37, your bro could be in channel 73.
+
+30
+00:01:40,600 --> 00:01:45,660
+ But what if there are 158 different phones and earbuds playing music in the same place?
+
+31
+00:01:45,800 --> 00:01:46,660
+ Two for each channel.
+
+32
+00:01:46,780 --> 00:02:00,563
+ First of all the lag would be absolutely scandalous But still your earbuds would limp along playing the one and only Shakira and no one else garbage How Well this is when we finally talk about how your headphones and phone pair
+
+33
+00:02:00,803 --> 00:02:03,003
+ Think of your earbuds as being a lock.
+
+34
+00:02:03,163 --> 00:02:07,503
+ When you click the pair button on said earbuds, it actively sends out a key through its antenna.
+
+35
+00:02:07,823 --> 00:02:12,363
+ Then, in your phone settings, you can see all the keys being sent out, and your phone can say,
+
+36
+00:02:12,463 --> 00:02:14,783
+ Key number 37948, I choose you.
+
+37
+00:02:14,883 --> 00:02:19,563
+ What then happens is at the beginning of each package of ones and zeros, your earbuds change its lock.
+
+38
+00:02:19,563 --> 00:02:22,103
+ and using the old key, it gives a new key to your phone.
+
+39
+00:02:22,263 --> 00:02:25,903
+ So, your earbuds technically can hear your bro's Taylor Swift playing,
+
+40
+00:02:26,263 --> 00:02:27,463
+ if it's in the same channel,
+
+41
+00:02:27,583 --> 00:02:29,243
+ but since it doesn't have the correct key,
+
+42
+00:02:29,383 --> 00:02:30,823
+ it not only ignores it completely,
+
+43
+00:02:31,183 --> 00:02:33,103
+ but it actually has no idea how to read it,
+
+44
+00:02:33,163 --> 00:02:35,763
+ because the key is an encryption for the rest of the message.
+
+45
+00:02:35,943 --> 00:02:37,423
+ Now, another question arises.
+
+46
+00:02:37,763 --> 00:02:40,283
+ Couldn't someone just intercept and then decrypt
+
+47
+00:02:40,283 --> 00:02:42,923
+ of all of what's being transmitted between your phone and headphones?
+
+48
+00:02:43,203 --> 00:02:46,143
+ Well, some of the engineers probably watched a little Einstein's as a kid,
+
+49
+00:02:46,203 --> 00:02:48,443
+ because there's a genius solution to this problem.
+
+50
+00:02:48,443 --> 00:02:51,083
+ Your phone and earbuds don't just stay in one channel.
+
+51
+00:02:51,363 --> 00:02:53,203
+ They do something called frequency hopping.
+
+52
+00:02:53,383 --> 00:02:57,943
+ They hop around from channel to channel and do this about 1,600 times every second.
+
+53
+00:02:58,143 --> 00:03:01,623
+ So an eavesdropper might be able to listen in for a teeny fraction of a second,
+
+54
+00:03:01,923 --> 00:03:06,343
+ but then you change channels and they would have no way of knowing what channel you went to.
+
+55
+00:03:06,443 --> 00:03:10,363
+ But then how does both your phone and earbuds know what channel to go to?
+
+56
+00:03:10,483 --> 00:03:12,723
+ Well, when your phone initially connects and says,
+
+57
+00:03:12,723 --> 00:03:15,003
+ key number 37948, I choose you,
+
+58
+00:03:15,003 --> 00:03:22,243
+ Within that message, it picks out a sequence and sends that information encrypted over to your headphones before any sound is even playing.
+
+59
+00:03:22,363 --> 00:03:26,923
+ This way, your phone and headphones are the only things that know what channel they're going to go to next.
+
+60
+00:03:27,043 --> 00:03:28,363
+ So yeah, not too complicated.
+
+61
+00:03:28,603 --> 00:03:31,403
+ Now you should be able to take sticks, rocks, and water and create some Bluetooth.
+
+62
+00:03:31,743 --> 00:03:32,203
+ You're welcome.
+
+63
+00:03:32,343 --> 00:03:35,763
+ That's going to cost you one subscribe and let me just flip this bad boy around.
+
+64
+00:03:35,983 --> 00:03:37,463
+ Tips in the form of likes are appreciated.
+

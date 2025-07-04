@@ -1,0 +1,57 @@
+[0.00 - 4.60]  Hey Vsauce, Michael here and today we are going to talk about color.
+[4.60 - 7.20]  Green, green, green, green.
+[7.20 - 10.60]  Goldon, let me just pink this up. Yellow.
+[10.60 - 13.80]  Michael, aren't you going to come to the concert this evening?
+[13.80 - 16.40]  I read about that. There's going to be a lot of purple there.
+[16.40 - 18.60]  I didn't teal you about this earlier?
+[18.60 - 22.00]  Well look, I have to go brown town first, but I'll be white black.
+[23.20 - 24.20]  Colors.
+[24.20 - 30.52]  Did you know that the human eye can differentiate 10 million different colors?
+[30.52 - 35.62]  But what color is a mirror?
+[35.62 - 39.94]  You might say silver because mirrors are often illustrated that way.
+[39.94 - 45.24]  And to be sure, they are made out of silver or silvery things like aluminum.
+[45.24 - 49.34]  But a mirror in reality is whatever color you point it at.
+[49.34 - 52.18]  In this green room, the mirror is green.
+[52.18 - 56.44]  And if you look inside a mirror, it becomes you-colored.
+[56.44 - 59.58]  An object is whatever color it doesn't absorb.
+[59.58 - 64.56]  These sticky notes are orange, because when hit with typical white light, they absorb
+[64.56 - 82.72]  every other wavelength of visible light except for orange which they diffuse into your eyeballs But a perfect mirror reflects all colors equally So in a way you could say that a mirror is white Except a mirror doesn reflect colors in the same way that pigment does
+[83.18 - 87.24]  A mirror reflects incoming light in a single outgoing direction.
+[88.32 - 90.90]  Specular reflection, not diffuse.
+[91.22 - 94.92]  This kind of reflection creates an image of the very thing in front of the mirror.
+[94.92 - 100.42]  So as bad astronomy jokes, a mirror is more of a smart white.
+[100.42 - 103.42]  But wait a second, that is a perfect mirror.
+[103.42 - 106.92]  And we live in the real world where there are no perfect mirrors.
+[106.92 - 110.42]  Every mirror absorbs a little bit of light.
+[110.42 - 113.42]  Not enough that it matters, I mean, looks pretty clear to me.
+[113.42 - 118.92]  But when you take a look at the spectrum of light reflected by a typical mirror,
+[118.92 - 124.98]  you will find that it best reflects light within the 510 nanometer range,
+[124.98 - 132.18]  which we perceive as green light. So technically a mirror is a tiny tiny tiny
+[132.18 - 137.64]  bit green. You may have noticed this yourself when investigating a mirror
+[137.64 - 142.62]  tunnel. This happens when two mirrors face each other. Reflecting the same
+[142.62 - 157.26]  scene back and forth and back and forth and back and forth with each new reflection a little bit more visual light is lost but green least of all That why the reflection way down the tunnel is dimmer and greener
+[158.12 - 162.36]  So maybe real world mirrors aren't smart white, they're actually kind of green,
+[162.56 - 165.00]  but we should talk about white.
+[165.74 - 167.96]  En español, white es blanco.
+[168.60 - 170.36]  En français, white se dit blanc.
+[171.00 - 174.38]  And in English, we have a word that comes from the same root.
+[174.38 - 182.12]  black, which is the opposite of white. How did that happen? Well, it turns out that all of those
+[182.12 - 191.06]  words come from the same ancient Proto-Indo-European root word, black, which meant shine, burn, flash.
+[191.48 - 197.68]  Some languages took it to mean the brightness of the flash, white, while others took it to mean
+[197.68 - 201.68]  what's left behind, the burned black darkness.
+[201.68 - 207.68]  If you have blue eyes, your eyes aren't actually blue in the sense that the molecules inside them
+[207.68 - 211.68]  are absorbing all of their wavelengths of visible light and diffusing the blue.
+[211.68 - 217.68]  No, no, no. Instead, your eyes are blue for the same reason that the sky is blue.
+[217.68 - 219.68]  Interference.
+[219.68 - 233.91]  In our sky light from the sun encounters molecules of air And because of the size of those molecules light of longer wavelengths can slip on by But shorter wavelengths crash into the particles like blue light and scatter
+[233.91 - 238.41]  Which is why we see blue when we look at the sky away from the Sun.
+[238.41 - 242.91]  Without the air molecules, that space would just be black.
+[242.91 - 246.91]  And when direct sunlight has to travel through a lot of air,
+[246.91 - 252.09]  Almost all the colors get scattered out except for the longest wavelengths, the red,
+[252.09 - 255.59]  which is what gives a sunrise and a sunset their color.
+[255.59 - 262.89]  The iris of your eyeball contains a hazy layer where light can be scattered just like the sky.
+[262.89 - 268.53]  Through a similar but slightly different process, shorter wavelengths are scattered more,
+[268.53 - 270.21]  making your eyes look blue.
+[270.21 - 272.77]  Unless, of course, you have some melanin in that iris,
+[272.77 - 276.85]  in which case your eyes are going to be green, hazel, or brown.
+[277.49 - 281.25]  Enjoy those colors, and as always, thanks for watching.

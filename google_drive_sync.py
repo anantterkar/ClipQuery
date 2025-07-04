@@ -547,14 +547,34 @@ class GoogleDriveSync:
             self.find_or_create_folder()
         
         query = f"'{self.folder_id}' in parents and trashed=false"
-        results = self.service.files().list(
-            q=query, 
-            spaces='drive', 
-            fields='files(id, name, mimeType, modifiedTime, size)',
-            orderBy='modifiedTime desc'
-        ).execute()
+        all_files = []
+        page_token = None
         
-        return results.get('files', [])
+        while True:
+            try:
+                results = self.service.files().list(
+                    q=query, 
+                    spaces='drive', 
+                    fields='nextPageToken, files(id, name, mimeType, modifiedTime, size)',
+                    orderBy='modifiedTime desc',
+                    pageToken=page_token,
+                    pageSize=1000  # Maximum page size
+                ).execute()
+                
+                files = results.get('files', [])
+                all_files.extend(files)
+                
+                # Check if there are more pages
+                page_token = results.get('nextPageToken')
+                if not page_token:
+                    break
+                    
+            except Exception as e:
+                print(f"❌ Error listing files: {e}")
+                break
+        
+        print(f"📄 Retrieved {len(all_files)} files from Google Drive")
+        return all_files
     
     def download_file(self, file_id: str, local_path: str) -> bool:
         """
@@ -742,11 +762,188 @@ class GoogleDriveSync:
                     if os.path.exists(temp_path):
                         os.remove(temp_path)
         
+        # After regular sync, check for missing video files
+        print("🔍 Checking for missing video files...")
+        missing_videos_result = self.check_and_download_missing_videos()
+        
+        # Add downloaded missing videos to the main result
+        downloaded.extend(missing_videos_result['downloaded'])
+        errors.extend(missing_videos_result['failed'])
+        
         return {
             'downloaded': downloaded,
             'updated': updated,
-            'errors': errors
+            'errors': errors,
+            'missing_videos_downloaded': missing_videos_result['downloaded'],
+            'missing_videos_failed': missing_videos_result['failed'],
+            'missing_videos_not_found': missing_videos_result['not_found']
         }
+
+    def check_and_download_missing_videos(self) -> Dict[str, List[str]]:
+        """
+        Check for missing video files that have transcripts but no MP4 files,
+        and attempt to download them from Google Drive.
+        
+        Returns:
+            Dictionary with 'downloaded', 'failed', and 'not_found' lists
+        """
+        downloaded = []
+        failed = []
+        not_found = []
+        
+        if not os.path.exists(self.local_sync_dir):
+            return {'downloaded': downloaded, 'failed': failed, 'not_found': not_found}
+        
+        # Get all transcript files
+        transcript_files = []
+        for file_name in os.listdir(self.local_sync_dir):
+            if file_name.endswith('.txt'):
+                transcript_files.append(file_name)
+        
+        print(f"🔍 Checking {len(transcript_files)} transcript files for missing videos...")
+        
+        # Debug: Show what folder we're looking in
+        print(f"🔍 Looking in Google Drive folder ID: {self.folder_id}")
+        
+        # Get all files from Google Drive for debugging
+        drive_files = self.list_drive_files()
+        print(f"🔍 Found {len(drive_files)} files in Google Drive folder")
+        
+        # Show first few files for debugging
+        print("🔍 First 10 files in Google Drive:")
+        for i, file_info in enumerate(drive_files[:10]):
+            print(f"  {i+1}. {file_info['name']} (ID: {file_info['id']})")
+        
+        for transcript_file in transcript_files:
+            video_id = transcript_file[:-4]  # Remove .txt extension
+            video_file_name = f"{video_id}.mp4"
+            video_path = os.path.join(self.local_sync_dir, video_file_name)
+            
+            # Check if video file is missing
+            if not os.path.exists(video_path):
+                print(f"📥 Video file missing for {video_id}, attempting to download...")
+                
+                # Look for the video file in Google Drive
+                video_file_info = None
+                
+                for file_info in drive_files:
+                    if file_info['name'] == video_file_name:
+                        video_file_info = file_info
+                        break
+                
+                if video_file_info:
+                    print(f"🎬 Found video in Google Drive: {video_file_name}")
+                    
+                    # Download the video file
+                    if self.download_file(video_file_info['id'], video_path):
+                        print(f"✅ Successfully downloaded: {video_file_name}")
+                        downloaded.append(video_file_name)
+                    else:
+                        print(f"❌ Failed to download: {video_file_name}")
+                        failed.append(video_file_name)
+                else:
+                    print(f"⚠️ Video file {video_file_name} not found in Google Drive")
+                    # Debug: Show similar files that might exist
+                    similar_files = [f['name'] for f in drive_files if video_id.lower() in f['name'].lower()]
+                    if similar_files:
+                        print(f"   🔍 Similar files found: {similar_files}")
+                    not_found.append(video_file_name)
+        
+        if downloaded:
+            print(f"✅ Downloaded {len(downloaded)} missing video files")
+        if failed:
+            print(f"❌ Failed to download {len(failed)} video files")
+        if not_found:
+            print(f"⚠️ {len(not_found)} video files not found in Google Drive")
+        
+        return {
+            'downloaded': downloaded,
+            'failed': failed,
+            'not_found': not_found
+        }
+
+    def download_missing_videos_only(self) -> Dict[str, List[str]]:
+        """
+        Only download missing video files without doing a full sync.
+        This is useful when you just want to get missing videos.
+        
+        Returns:
+            Dictionary with download results
+        """
+        print("🎬 Downloading missing video files only...")
+        return self.check_and_download_missing_videos()
+
+    def debug_drive_setup(self):
+        """
+        Debug Google Drive setup and permissions.
+        This will help identify issues with folder access and file visibility.
+        """
+        print("🔍 Debugging Google Drive setup...")
+        
+        try:
+            # Check authentication
+            print("✅ Authentication successful")
+            
+            # Check folder ID
+            if not self.folder_id:
+                print("⚠️ No folder ID set, attempting to find/create folder...")
+                self.find_or_create_folder()
+            
+            print(f"📁 Using folder ID: {self.folder_id}")
+            
+            # List all folders to see what's available
+            print("\n📁 Available folders in Google Drive:")
+            query = "mimeType='application/vnd.google-apps.folder' and trashed=false"
+            results = self.service.files().list(q=query, spaces='drive', fields='files(id, name)').execute()
+            folders = results.get('files', [])
+            
+            for i, folder in enumerate(folders):
+                print(f"  {i+1}. {folder['name']} (ID: {folder['id']})")
+                if folder['id'] == self.folder_id:
+                    print(f"      ← This is the current folder")
+            
+            # List files in the current folder
+            print(f"\n📄 Files in current folder (ID: {self.folder_id}):")
+            drive_files = self.list_drive_files()
+            
+            if not drive_files:
+                print("  ⚠️ No files found in the current folder")
+                print("  This could mean:")
+                print("  1. The folder is empty")
+                print("  2. The folder ID is incorrect")
+                print("  3. Permission issues")
+                print("  4. Files are in a different folder")
+            else:
+                print(f"  Found {len(drive_files)} files:")
+                for i, file_info in enumerate(drive_files[:20]):  # Show first 20
+                    print(f"    {i+1}. {file_info['name']} (ID: {file_info['id']})")
+                if len(drive_files) > 20:
+                    print(f"    ... and {len(drive_files) - 20} more files")
+            
+            # Check for specific missing videos
+            print(f"\n🎬 Checking for specific missing videos:")
+            missing_videos = ['copay_health_insurance.mp4', 'acko_vs_star.mp4', 'care_supreme_health.mp4']
+            
+            for video_name in missing_videos:
+                found = False
+                for file_info in drive_files:
+                    if file_info['name'] == video_name:
+                        print(f"  ✅ Found: {video_name} (ID: {file_info['id']})")
+                        found = True
+                        break
+                
+                if not found:
+                    print(f"  ❌ Not found: {video_name}")
+                    # Look for similar names
+                    similar = [f['name'] for f in drive_files if video_name.replace('.mp4', '').lower() in f['name'].lower()]
+                    if similar:
+                        print(f"    🔍 Similar files: {similar}")
+            
+            return True
+            
+        except Exception as e:
+            print(f"❌ Error debugging Google Drive setup: {e}")
+            return False
     
     def transcribe_video(self, video_path: str) -> bool:
         """
@@ -990,6 +1187,14 @@ class GoogleDriveSync:
         if sync_result['errors']:
             print(f"❌ Errors: {len(sync_result['errors'])} files")
         
+        # Report on missing video downloads
+        if 'missing_videos_downloaded' in sync_result and sync_result['missing_videos_downloaded']:
+            print(f"🎬 Downloaded {len(sync_result['missing_videos_downloaded'])} missing video files")
+        if 'missing_videos_failed' in sync_result and sync_result['missing_videos_failed']:
+            print(f"❌ Failed to download {len(sync_result['missing_videos_failed'])} missing video files")
+        if 'missing_videos_not_found' in sync_result and sync_result['missing_videos_not_found']:
+            print(f"⚠️ {len(sync_result['missing_videos_not_found'])} video files not found in Google Drive")
+        
         # Process any new files
         all_new = sync_result['downloaded'] + sync_result['updated']
         if all_new:
@@ -1034,7 +1239,24 @@ class GoogleDriveSync:
         self._cleanup_interrupted_sync()
         
         # Perform sync
-        return self.sync_from_drive()
+        sync_result = self.sync_from_drive()
+        
+        # Print summary
+        print(f"\n📊 Sync Summary:")
+        print(f"📥 Downloaded: {len(sync_result['downloaded'])} files")
+        print(f"🔄 Updated: {len(sync_result['updated'])} files")
+        if sync_result['errors']:
+            print(f"❌ Errors: {len(sync_result['errors'])} files")
+        
+        # Report on missing video downloads
+        if 'missing_videos_downloaded' in sync_result and sync_result['missing_videos_downloaded']:
+            print(f"🎬 Downloaded {len(sync_result['missing_videos_downloaded'])} missing video files")
+        if 'missing_videos_failed' in sync_result and sync_result['missing_videos_failed']:
+            print(f"❌ Failed to download {len(sync_result['missing_videos_failed'])} missing video files")
+        if 'missing_videos_not_found' in sync_result and sync_result['missing_videos_not_found']:
+            print(f"⚠️ {len(sync_result['missing_videos_not_found'])} video files not found in Google Drive")
+        
+        return sync_result
 
 # Example usage and setup
 def setup_google_drive_sync():

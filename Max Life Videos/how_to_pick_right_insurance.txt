@@ -1,0 +1,101 @@
+[0.00 - 8.50]  Hello folks, welcome to Ditto Insurance. I am Shashank, your host, and today we are going to
+[8.50 - 14.74]  dive deep into one of the topics that is very crucial if you are out on a hunt for a health
+[14.74 - 21.34]  insurance. Folks, you're aware about the rising medical costs every year. Inflation is at 14-15%.
+[21.34 - 27.62]  So having health insurance at this moment is not an option anymore. It's a dire necessity. So
+[27.62 - 38.38]  So when you head out to buy that first health insurance of yours, your insurers or your advisors might keep telling you that, hey, these are the metrics that you need to follow.
+[38.50 - 39.94]  These are the features that you need to see.
+[39.94 - 50.82]  But one thing that they might miss out is telling you that the financial stability of the insurer is one of the biggest factors in deciding if you should go with that company or not.
+[50.82 - 57.70]  So to exactly decode this and take you through this world of incurred claim ratio or ICR,
+[58.16 - 62.46]  I have with me Rishabh Kashyap, who is the Senior Partnership Manager here at Ditto.
+[62.78 - 63.50]  Welcome, Rishabh.
+[63.62 - 65.12]  Thanks, Rishabh. Glad to be here once again.
+[65.40 - 71.58]  So Rishabh, today let's speak about ICR because it's one of the least spoken topics in the insurance industry.
+[71.58 - 79.58]  and I feel that it is important for people to know that a company with a certain range of ICR
+[79.58 - 86.04]  is better for them in a way. Now, take us through ICR in your experience.
+[86.52 - 90.58]  It's pretty straightforward. Let's think of it this way. What's your favorite restaurant in
+[90.58 - 95.68]  Bangalore? Where do you prefer the most to go? I think it would be Yuki, JP Nagar.
+[95.88 - 97.76]  Okay, why not Kormangala because there are two branches?
+[97.76 - 104.12]  Well, I think it's mainly because of the reviews of Yuki, JP Nagar that got me there.
+[104.12 - 114.48]  Right. So that just happens to be one of the factors, one of the metrics that you would consider that Yuki, JP Nagar is better than one of the other branches that they have in Kormangala.
+[114.48 - 129.04]  So similarly, it's the case with health insurance as well, where ICR is an indicative metric to showcase the financial strength or like a financial report card, so to say, for an insurance company.
+[129.66 - 133.22]  So basically, insurance companies collect premiums.
+[133.70 - 148.23]  Now how much premiums that they have collected versus how much claims that they paid out So that factor that ratio is what is called as an incurred claim ratio Understood So basically how much premiums they collect versus how much claims have dispersed
+[148.45 - 149.39]  So that's the ratio?
+[149.61 - 150.57]  That's the ratio, yes.
+[150.81 - 155.77]  So if an insurer has collected, let's say, about 100 crores worth of premium
+[155.77 - 159.33]  and they have paid out 80 crores as claims.
+[159.63 - 163.11]  Now that's an ICR or incurred claim ratio of 80%.
+[163.11 - 164.37]  Understood. Pretty straightforward.
+[164.37 - 172.79]  Now, we say that CSR has to be at least 90% or above. Is that the same for ICR?
+[172.79 - 194.21]  Indeed. So it's not one particular number or a higher value per se, but rather a definitive range. So a healthy range to consider for an insurance company's ICR would be anywhere between 50 to 80%. So as long as the company's ICR tends to be between 50 to 80, that's a good metric to look at.
+[194.21 - 204.61]  So anything less than that is a little concern because, let's say, insurers would be concerned more from the profit perspective rather than paying out the claims.
+[205.29 - 211.19]  And anything more than that, more than 80%, it would be too generous.
+[211.91 - 219.05]  So do you think that ICR can help the customers in recognizing the red flags in an insurer?
+[219.05 - 232.91]  Certainly. So to bring in a specific example of individual insurers, so let's take HTFC Ergo General Insurance and Aditya Birla General Insurance.
+[233.41 - 239.43]  Now, HTFC Ergo has a healthy range of around 80% as an ICR.
+[239.69 - 244.49]  Similarly with Aditya Birla, it stands to be somewhere around 65 to maybe 70%.
+[244.49 - 255.39]  But then you have standalone health insurance companies like Care Health Insurance or Niva Bupa, where their ICR stands to be between, I believe, 55 to 58%.
+[255.39 - 273.13]  Now, general insurance company can actually have a higher ICR or slightly more than standalone health insurance companies because any claims that they pay of a higher value for health insurance can be used as an offset by utilizing other insurance products that they sell.
+[273.39 - 276.79]  But you can't say the same about standalone health insurance companies
+[276.79 - 296.02]  because most of their products are towards the healthcare side So they will end up paying more in terms of the claims So which is why it tends to be lesser as compared to the ICR tends to be lesser as compared to general insurance companies Undisturbed And Rishabh I would you know at this point want
+[296.02 - 300.50]  to ask you a question. But before I come to that question, let me tell the viewers a little
+[300.50 - 305.18]  something about Ditto. Ditto is an insurance advisory platform. We are backed by Zerodha
+[305.18 - 309.14]  and we have over 10,000 plus reviews on Google.
+[309.32 - 311.88]  We have an average rating of 4.9 over 5
+[311.88 - 315.44]  and we have helped a lot of people not just purchase
+[315.44 - 318.86]  but also understand their insurance, compare them.
+[319.20 - 322.18]  We've helped them with porting and also provide free claim support.
+[322.38 - 324.66]  So folks, at no additional cost to you,
+[325.06 - 327.94]  you can book a free consultation with Ditto today
+[327.94 - 329.66]  with a special link in the description.
+[329.90 - 331.60]  Why do I say that this is a special link?
+[331.66 - 334.98]  Because this link is only meant for our YouTube audience.
+[334.98 - 339.50]  So go ahead and book your free consultation with us with a link in the description.
+[339.96 - 341.28]  Now, Rishabh, back to the question.
+[342.06 - 348.28]  What if an insurer has ICR, which is more, say more than 80-90%?
+[348.80 - 350.90]  That means they're being really generous, right?
+[351.20 - 352.72]  I mean, who wouldn't love that?
+[353.20 - 361.26]  Well, of course, the policyholders would benefit because every single claims that they bring in.
+[361.82 - 364.22]  So the insurer will eventually end up paying it.
+[364.22 - 368.60]  So one example is recently we did a video on Ifco Tokyo.
+[369.30 - 372.78]  So Ifco Tokyo's ICR shows 116%.
+[372.78 - 376.68]  Now, this might be overly generous, but this is not a good sign.
+[377.14 - 384.78]  So this basically shows that the insurance company is paying out more claims than the insurance premiums that they are collecting.
+[384.78 - 395.12]  So this means that the insurance company would constantly need recapitalization of funds in order to run their shop, keep the lights on.
+[395.50 - 398.22]  So take examples of PSU health insurance companies.
+[398.56 - 405.64]  So you have your Oriental Insurance, you have your New India Company, and also you have United Health Insurance.
+[405.90 - 411.08]  All these PSU companies tend to have more than 100% plus as incurred claim ratio.
+[411.86 - 414.06]  But it's a common trend as well,
+[414.16 - 415.48]  if anybody can actually observe,
+[415.66 - 417.38]  that PSU health insurance company
+[417.38 - 419.46]  need constant recapitalization of funds
+[419.46 - 420.90]  in order to stay afloat,
+[421.38 - 436.38]  which is also because of many welfare public welfare or social welfare related schemes which they pay out a lot of claim amounts for So this is why a higher incurred claim ratio is never a good thing
+[437.30 - 439.64]  Now, Rishabh, one thing I've noticed is that
+[439.64 - 443.06]  on Instagram, on your Google,
+[443.20 - 446.04]  you keep getting ads of these insurance companies.
+[446.50 - 450.98]  And one thing that they market well is that our CSR is the best.
+[450.98 - 453.74]  our CSR is amazing.
+[453.96 - 456.24]  It's over 90%, over 95%.
+[456.24 - 458.94]  They say that we have so many network hospitals.
+[459.92 - 463.04]  But why doesn't anyone talk about ICR?
+[463.14 - 466.80]  Because after knowing so much about ICR in depth,
+[467.02 - 471.16]  how important it is that your insurer doesn't run out of funds.
+[471.48 - 472.96]  Why is ICR less talked?
+[473.44 - 476.36]  So, CSR, ICR,
+[476.36 - 479.82]  these are all the pieces of the puzzle that you can use
+[479.82 - 485.42]  in order to make a conclusive decision as to which health insurance companies that you can reliably
+[486.22 - 490.62]  put your money into and ensure that you are financially secured and that the safety net
+[490.62 - 496.94]  is put in place so folks if you find it difficult to place all of the pieces of the puzzle together
+[496.94 - 503.26]  then let ditto do that for you all you have to do is go to the description you will find one link
+[503.26 - 510.62]  you just need to book a free call with us and in under two minutes we will assign you an IRDI
+[510.62 - 515.82]  certified advisor who will take you through the different nuances of insurance who will take you
+[515.82 - 522.38]  through the metrics of the insurers and we will help you select the best plan and all it takes
+[522.38 - 529.42]  is just 30 minutes of your time to secure you and your family so Rishabh thank you so very much for
+[529.42 - 535.98]  joining us and helping me and the audience here understand how important it is look at all of the
+[535.98 - 542.46]  metrics before deciding which insurer you should go with and also in depth going into icr and
+[542.46 - 548.46]  helping me understanding about it but thank you so much my pleasure yeah so folks i will see you in
+[548.46 - 555.42]  the next video we have a couple of exciting videos that are coming out we also have a couple of new
+[555.42 - 560.62]  policy reviews that are coming out. So stay tuned for that one, subscribe if you haven't,
+[560.62 - 564.94]  like this video and share this with someone who you think will benefit from this video.
+[565.58 - 569.90]  I will see you in the next one. Happy insurance hunting.

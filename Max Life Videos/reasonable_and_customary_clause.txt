@@ -1,0 +1,80 @@
+[0.00 - 7.00]  You get treated, you submitted the bill and your insurer paid you. Only half? Yes, that actually happens.
+[7.00 - 12.00]  And when you ask the insurer why, they'll usually point to something buried deep in your policy document.
+[12.00 - 18.00]  It's called as reasonable and customary clause and it's one of those tricky things that sounds innocent
+[18.00 - 21.00]  but can hit you with unexpected out-of-pocket costs when you least expect it.
+[21.00 - 24.00]  Hello folks, I'm Shashank and you're watching Ditto Insurance.
+[24.00 - 27.00]  In this video, I'm going to walk you through what this clause actually means,
+[27.00 - 31.92]  means, how it works and how you can avoid getting burned by it. And if at any point you feel
+[31.92 - 36.34]  overwhelmed or unsure about your current plan, just pause and book a free call with a link in
+[36.34 - 41.30]  bio. We'll help you decode this clause and your entire health policy, no spam and with no pressure
+[41.30 - 46.14]  to buy. Again, the link is in the description. Alright, let's jump into it. So what exactly is
+[46.14 - 50.86]  reasonable and customary clause anyway? Think of it like this. You go in for a routine surgery,
+[51.04 - 55.20]  the doctor's good, the hospital's clean, the treatment is successful. But later,
+[55.20 - 60.62]  when you file for reimbursement, your insurer says, hey, we're only going to cover 2.5 lakh
+[60.62 - 66.90]  rupees out of the 4 lakh bill. Why? Now, because according to their data, 2.5 lakh rupees is what
+[66.90 - 72.98]  this surgery typically costs in your city, in your area. That extra 1.5 lakh rupees, not their
+[72.98 - 78.16]  problem. That, my friend, is now yours. And that's exactly what the reasonable and customary clause
+[78.16 - 93.13]  allows them to do This clause gives your insurer the power to cap your reimbursement based on what what they consider a fair or standard price for a treatment Doesn matter what the hospital charged if they feel it excessive they limit their payout It all about managing costs and to be fair it helps control
+[93.13 - 97.71]  inflated billing. But as policyholder, it can leave you with a nasty surprise unless you know
+[97.71 - 102.57]  what you're walking into. Okay, but how does this clause actually work in practice? So let's assume
+[102.57 - 107.31]  when you make a claim, especially a reimbursement one, your insurer does a few checks. First,
+[107.31 - 111.93]  they'll look at the rate card from your similar hospitals in your area. If your hospital rates
+[111.93 - 116.13]  are way above the average, they'll flag it. Second, they'll see if the treatment protocol
+[116.13 - 120.73]  followed by your hospital was standard. For example, if you were given five scans and two
+[120.73 - 125.21]  specialists for a condition that normally needs one doctor and one scan, the insurer can call it
+[125.21 - 130.19]  non-customary. Third, they'll examine what was billed. Sometimes hospitals add unnecessary
+[130.19 - 134.95]  consumables or extra stuffing. And if those don't align with the usual standards, your claim gets
+[134.95 - 139.91]  punched. And here's the catch. These checks are internal. The insurer decides what's reasonable
+[139.91 - 144.41]  based on their own data. We don't have access to their benchmark rates and those limits vary
+[144.41 - 149.29]  from one insurer to another. Now, you might be wondering, does this apply to every claim?
+[149.43 - 154.53]  Thankfully, no. This clause is mostly applied to reimbursement claims and not cashless ones.
+[154.65 - 158.63]  That's because in cashless claims, your insurer already has a prefix rate agreement with the
+[158.63 - 163.47]  hospital. So, pricing disputes don't really come up. But if you go to non-network hospital,
+[163.47 - 175.75]  pay out of pocket and then submit bills then that where this clause can bite you hard So if you want to minimize the risk of this happening always and I mean always opt for cashless treatment at a network hospital whenever possible
+[175.91 - 179.17]  Now, why do insurers even use this clause? What's in it for them?
+[179.25 - 181.73]  The biggest reason is simple, to prevent overbilling.
+[181.87 - 185.99]  If insurers blindly pay every inflated bill from every overpriced hospital,
+[186.21 - 188.53]  premiums would shoot through the roof for everyone.
+[188.67 - 192.53]  This clause gives them a way to say, we'll pay what's fair, not what's padded.
+[192.53 - 194.73]  It also ensures uniform pricing standards.
+[194.99 - 198.57]  So two customers undergoing the same treatment in the same city
+[198.57 - 202.95]  don't have wildly different claim experiences just because they went to different hospitals.
+[203.15 - 205.95]  Now, from a cost control angle, this makes sense.
+[206.21 - 209.95]  But from your side, it's one more reason to carefully read your policy
+[209.95 - 212.69]  and know which hospitals are part of your network.
+[212.81 - 214.71]  You will get this list on the insurer's website.
+[214.89 - 217.45]  Now, what if you're hit with this clause unfairly?
+[217.83 - 218.65]  What can you do?
+[218.71 - 221.23]  If your insurer uses this clause to reduce your claim
+[221.23 - 223.99]  and you believe the treatment cost was justified,
+[224.31 - 226.05]  you have the right to challenge it.
+[226.15 - 227.37]  And this is what you can do.
+[227.49 - 228.33]  Gather documents.
+[228.45 - 231.19]  Get a detailed breakup of the bill supporting doctor notes
+[231.19 - 234.39]  and proof that the treatment was necessary indeed.
+[234.53 - 239.57]  Second, get second estimates from other hospitals in the same area for the same treatment.
+[239.77 - 243.11]  Now, all you got to do is submit everything to the insurer's grievance cell
+[243.11 - 244.99]  and request a reassessment.
+[244.99 - 246.83]  If they still refuse to revise the payout,
+[247.11 - 259.02]  you can escalate the case to the IRDAI And yes they do take these complaints quite seriously if you have solid documentation But just one thing to remember as per IDI regulations insurers are allowed to invoke
+[259.02 - 261.44]  this clause only if they can prove overbilling.
+[261.56 - 264.86]  So the burden is on them, not you, to justify the cut.
+[264.98 - 267.00]  So folks, what is the takeaway here?
+[267.08 - 269.48]  The reasonable and customary clause isn't illegal.
+[269.68 - 270.92]  It is not a scam.
+[271.08 - 273.00]  It's just a pricing control mechanism.
+[273.14 - 277.34]  But I agree, it can leave you with a surprise bill, especially if you're unaware if your
+[277.34 - 281.98]  treatment happens outside the network. So the smartest thing that you can do is stick to Network
+[281.98 - 286.60]  Hospital for cashless claims. Understand your insurer's pricing benchmarks as much as you can.
+[286.70 - 291.66]  And most importantly, talk to someone who can help you decode this upfront. You won't face this issue
+[291.66 - 296.02]  if you have Ditto by your side. Because at Ditto, we've helped over 7 lakh customers choose health
+[296.02 - 300.36]  insurance policies and that actually works for them, including people who've been blindsided
+[300.36 - 304.82]  by clauses like this. So if you want to review your plan or understand how your insurer handles
+[304.82 - 309.00]  stuff like this, just book a free call. We'll break it down all for you, clause by clause,
+[309.26 - 313.32]  benefit by benefit. Now, some final thoughts before you go. This clause is part of almost
+[313.32 - 317.62]  every policy we've seen at Ditto. So it's not like you can totally avoid it. But with the right
+[317.62 - 323.38]  policy and the right hospital, you can make sure it never becomes a problem for you. If this video
+[323.38 - 327.36]  helped you, hit that like button and maybe share it with someone who just bought insurance. And
+[327.36 - 331.42]  yes, don't forget to book that free call with Ditto. Thanks for watching, folks. Stay insured,
+[331.42 - 334.54]  stay informed, and I will see you in the next one. Happy insurance hunting.
+[334.82 - 336.82]  Thanks for watching!

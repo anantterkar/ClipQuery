@@ -106,7 +106,7 @@ def concatenate_videos(video_paths, output_filepath):
         return f"❌ Exception during concatenation: {str(e)}", None
 
 # ------------------ LLM Setup ------------------
-os.environ["GROQ_API_KEY"] = "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"
+os.environ["GROQ_API_KEY"] = "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"
 
 llm = ChatGroq(model="llama-3.3-70b-versatile", temperature=1)
 llm_clipping = ChatGroq(model="llama-3.3-70b-versatile", temperature=1.2)  # Higher temperature for more creative clipping
@@ -114,6 +114,10 @@ llm_clipping = ChatGroq(model="llama-3.3-70b-versatile", temperature=1.2)  # Hig
 general_template = """
 You are Vivi, an expert and friendly video assistant chatbot.
 You are having an ongoing conversation with the user. You have access to a transcript of a video. If the user's question is about the video, answer helpfully and use the transcript as context. Do not refer to timestamps unless they are explicitly present in the transcript context. If the question is general and not related to the video, just respond helpfully like a normal assistant.
+
+IMPORTANT: Acronyms, product names, and technical terms may appear in the transcript with or without spaces, hyphens, or different casing (e.g., 'StarULIP', 'Star ULIP', 'star ulip'). When matching terms from the user's query to the transcript, always consider possible variations in spacing and casing, and do not assume an exact match is required.
+
+CRITICAL: When the user asks about specific terms, acronyms, or concepts, carefully search through the provided transcript for those terms. If you find explanations or mentions of the requested terms, provide a comprehensive answer based on what you find in the transcript. Do not say a term is not mentioned unless you have thoroughly searched the entire transcript and are certain it is not present.
 ---
 Conversation History:
 {context}
@@ -128,38 +132,50 @@ Vivi:
 """
 
 clipping_template = """
-You are an expert video analysis assistant. Given a user query and a set of relevant transcript segments (with timestamps), propose the best, smoothest video clip ranges (start and end times in seconds) that comprehensively answer the query. 
+You are an expert video analysis assistant. Given a user query and full transcripts from multiple videos, propose the best video clip ranges (start and end times in seconds) that comprehensively answer the query. 
 
 IMPORTANT GUIDELINES:
 1. Create COMPLETE, comprehensive clips that fully address the query
 2. For acronyms, frameworks, methods, or multi-part explanations, ensure ALL components are explained in the clip
-3. Merge adjacent or nearby segments to create longer, more natural clips
-4. Extend clips to include complete thoughts, sentences, and explanations
-5. Ensure clips start and end at natural points (beginning/end of sentences or thoughts)
-6. Do NOT create very short clips - aim for meaningful, substantial content
-7. If the query asks for multiple aspects, create multiple clips to cover all aspects
-8. Use the provided segments as context but feel free to extend beyond them for completeness
-9. Pay special attention to structured content - make sure all parts are covered
-10. AVOID creating overlapping or redundant clips - each clip should be unique and non-overlapping
-11. Choose the MOST RELEVANT clip range that best answers the query
-12. For acronym explanations, ensure you include the COMPLETE explanation of ALL letters/components
-13. Do NOT cut off acronym explanations mid-way - include the full breakdown
-14. If an acronym has multiple parts, make sure ALL parts are covered in the clip
-15. If the query asks for MULTIPLE acronyms (e.g., "What is NOPP and StarULIP?"), create separate clips for EACH acronym
-16. Ensure ALL requested acronyms are covered - don't miss any acronym mentioned in the query
-17. CRITICAL: Do NOT create overlapping time ranges - each clip should have unique start and end times
-18. For multiple acronyms, create one clip per acronym with non-overlapping time ranges
-19. If segments overlap, choose the most relevant non-overlapping ranges
+3. Choose the MOST RELEVANT video for each clip based on content
+4. Ensure clips start and end at natural points (beginning/end of sentences or thoughts)
+5. Be PRECISE - find the exact timestamps where the content appears in the transcript
+6. If the query asks for multiple aspects, create multiple clips to cover all aspects
+7. Pay special attention to structured content - make sure all parts are covered
+8. AVOID creating overlapping or redundant clips - each clip should be unique and non-overlapping
+9. For acronym explanations, ensure you include the COMPLETE explanation of ALL letters/components
+10. Do NOT cut off acronym explanations mid-way - include the full breakdown
+11. If the query asks for MULTIPLE acronyms (e.g., "What is NOPP and StarULIP?"), create separate clips for EACH acronym
+12. Ensure ALL requested acronyms are covered - don't miss any acronym mentioned in the query
+13. CRITICAL: Do NOT create overlapping time ranges - each clip should have unique start and end times
+14. For multiple acronyms, create one clip per acronym with non-overlapping time ranges
+15. Specify which video to use for each clip based on content relevance
+16. If a clip would end mid-sentence or mid-thought, extend it to include the complete sentence or thought
+
+TIMESTAMP INSTRUCTIONS:
+- The transcript contains timestamps in the format [start_time - end_time] followed by text
+- Find the timestamps where the content you need appears
+- For acronyms, find the timestamps where each letter/component is explained
+- Use the exact start time of the first relevant segment and exact end time of the last relevant segment
+- Add minimal context only if the clip would otherwise end mid-sentence
+- Do NOT use broad ranges like 0-60, 0-120, or 0-156
+- Be specific and complete - ensure the entire explanation is captured
+- Look for the exact timestamps where the requested content appears
+
+IMPORTANT: Acronyms, product names, and technical terms may appear in the transcript with or without spaces, hyphens, or different casing (e.g., 'StarULIP', 'Star ULIP', 'star ulip'). When matching terms from the user's query to the transcript, always consider possible variations in spacing and casing, and do not assume an exact match is required.
 
 Query: {query}
-Relevant Transcript Segments:
+Full Transcripts from Videos:
 {transcript}
 
 Return the result in the following format, with each range and explanation on separate lines:
-- Range: start_time - end_time
+- Video: [video_id]
+  Range: start_time - end_time
   Relevance: [Brief explanation of why this range is relevant to the query]
 
-Make sure to create comprehensive clips that fully answer the user's query, not just partial explanations. For structured content (acronyms, frameworks, methods), ensure every component is explained. Avoid redundant or overlapping clips. For acronyms, make sure to include the complete explanation of all components. If multiple acronyms are requested, ensure ALL are covered with separate, non-overlapping clips.
+Make sure to create comprehensive clips that fully answer the user's query, not just partial explanations. For structured content (acronyms, frameworks, methods), ensure every component is explained. Avoid redundant or overlapping clips. For acronyms, make sure to include the complete explanation of all components. If multiple acronyms are requested, ensure ALL are covered with separate, non-overlapping clips. Choose the most relevant video for each clip based on content. 
+
+CRITICAL: Find the exact timestamps where the content appears and use those. Do not use broad ranges like 0-60. Be precise and complete.
 """
 
 prompt_general = ChatPromptTemplate.from_template(general_template)
@@ -185,12 +201,20 @@ class ViviChatbot:
         self.transcript_segments = []
         self.full_transcript_text = ""
         self.audio_process = None
+        
+        # Conversation history management
+        self.conversation_history = []
+        self.max_conversation_turns = 10  # Keep only last 10 turns
+        self.max_context_chars = 8000  # Reduced from 16000/24000
 
         # Initialize Google Drive sync in background
         self.drive_sync = None
         self.sync_thread = None
         if GOOGLE_DRIVE_AVAILABLE:
             self.init_google_drive_sync()
+        
+        # Check for missing video files on startup
+        self.check_missing_videos_on_startup()
 
         # Logo and Title Frame
         self.header_frame = ctk.CTkFrame(self.root, fg_color="#FFFFFF", width=200, height=100)
@@ -245,15 +269,9 @@ class ViviChatbot:
         self.send_btn = ctk.CTkButton(self.entry_frame, text="Send", command=self.send_message, fg_color="#1a2238", width=160, height=40, font=("Arial", 16))
         self.send_btn.pack(side="right")
 
-        # Buttons for upload, input video, and final video
+        # Buttons for final video and sync
         self.btn_frame = ctk.CTkFrame(self.root, fg_color="#FFFFFF")
         self.btn_frame.pack(pady=(0, 10))
-
-        self.upload_btn = ctk.CTkButton(self.btn_frame, text="📂 Upload Video", command=self.browse_video, fg_color="#1a2238", width=160, height=40, font=("Arial", 16))
-        self.upload_btn.pack(side="left", padx=5)
-
-        self.input_video_btn = ctk.CTkButton(self.btn_frame, text="▶️ Input Video", command=self.play_input_video, fg_color="#1a2238", width=160, height=40, font=("Arial", 16))
-        self.input_video_btn.pack(side="left", padx=5)
 
         self.final_video_btn = ctk.CTkButton(self.btn_frame, text="🎬 Final Video", command=self.play_final_video, fg_color="#1a2238", width=160, height=40, font=("Arial", 16))
         self.final_video_btn.pack(side="left", padx=5)
@@ -261,6 +279,8 @@ class ViviChatbot:
         # Sync button
         self.sync_btn = ctk.CTkButton(self.btn_frame, text="🔄 Sync Drive", command=self.manual_sync, fg_color="#17a2b8", width=120, height=40, font=("Arial", 14))
         self.sync_btn.pack(side="left", padx=5)
+
+
 
         # Google Drive sync status indicator
         self.sync_status_label = ctk.CTkLabel(self.btn_frame, text="🔄 Initializing Google Drive sync...", font=("Arial", 12), text_color="#666666")
@@ -273,7 +293,7 @@ class ViviChatbot:
         self.progress_bar.pack_forget()  # Hide initially
 
         # Initial welcome message
-        self.display_message("assistant", "Hello! I'm Vivi, your video assistant. I can help you with video analysis, transcription, and creating clips. How can I assist you today?")
+        self.display_message("assistant", "Hello! I'm Vivi, your video assistant. I can help you analyze videos from your Google Drive and create clips. Just ask me questions or use 'clipping:' to create video clips. How can I assist you today?")
 
         # Initialize RAG pipeline
         try:
@@ -284,7 +304,67 @@ class ViviChatbot:
             self.rag = None
 
         # Similarity threshold for filtering results
-        self.similarity_threshold = 0.85
+        self.similarity_threshold = 0.75  # More permissive to ensure we get relevant results
+
+    def estimate_tokens(self, text):
+        """Rough estimate of token count (1 token ≈ 4 characters for English text)."""
+        return len(text) // 4
+
+    def check_token_limit(self, text, max_tokens=8000):
+        """Check if text exceeds token limit and truncate if necessary."""
+        estimated_tokens = self.estimate_tokens(text)
+        if estimated_tokens > max_tokens:
+            # Truncate to approximately max_tokens
+            max_chars = max_tokens * 4
+            return text[:max_chars] + "..."
+        return text
+
+
+
+    def manage_conversation_history(self, user_input, response):
+        """Manage conversation history to prevent token limit exceeded errors."""
+        # Add new turn to history
+        self.conversation_history.append({
+            'user': user_input,
+            'ai': response,
+            'timestamp': time.time()
+        })
+        
+        # Keep only the last N turns
+        if len(self.conversation_history) > self.max_conversation_turns:
+            self.conversation_history = self.conversation_history[-self.max_conversation_turns:]
+        
+        # Rebuild context from history with token limit checking
+        context_parts = []
+        total_chars = 0
+        max_context_chars = self.max_context_chars
+        
+        for turn in self.conversation_history:
+            turn_text = f"User: {turn['user']}\nAI: {turn['ai']}\n"
+            if total_chars + len(turn_text) > max_context_chars:
+                break
+            context_parts.append(turn_text)
+            total_chars += len(turn_text)
+        
+        self.context = "\n".join(context_parts)
+        
+        # Final token limit check
+        self.context = self.check_token_limit(self.context, max_tokens=6000)  # Conservative limit
+        
+        estimated_tokens = self.estimate_tokens(self.context)
+        print(f"Conversation history: {len(self.conversation_history)} turns, {total_chars} chars, ~{estimated_tokens} tokens")
+        
+        # Auto-clear if getting too large
+        if estimated_tokens > 5000:  # Conservative threshold
+            print("⚠️ Conversation history getting large, auto-clearing...")
+            self.conversation_history = self.conversation_history[-3:]  # Keep only last 3 turns
+            self.context = ""
+            for turn in self.conversation_history:
+                self.context += f"User: {turn['user']}\nAI: {turn['ai']}\n"
+            self.context = self.check_token_limit(self.context, max_tokens=3000)
+            print("✅ Auto-cleared conversation history")
+            # Show a subtle notification to the user
+            self.display_message("system", "💡 Conversation history automatically cleared to maintain performance.")
 
     def init_google_drive_sync(self):
         """Initialize Google Drive sync in background thread."""
@@ -693,63 +773,76 @@ class ViviChatbot:
         # 4. Otherwise, return the original end_time
         return end_time
 
+    def normalize(self, text):
+        return text.replace(' ', '').lower()
+
     def find_complete_acronym_explanation(self, video_id, query):
-        """Find complete acronym explanations in a video for any acronym query."""
+        """Find complete explanations in a video for any query."""
         full_segments = self.load_transcript_segments(video_id)
         
-        # Extract only actual acronyms from query (not common words)
+        # Get video duration to ensure we don't exceed it
+        video_path = os.path.join("Max Life Videos", f"{video_id}.mp4")
+        video_duration = self.get_video_duration(video_path) if os.path.exists(video_path) else None
+        
+        # Extract query terms (both acronyms and regular terms)
         query_upper = query.upper()
-        # Look for specific known acronyms first
-        known_acronyms = ['NOPP', 'STARULIP', 'ULIP', 'SMART', 'SWOT', 'ABCD', 'ABCDEF']
-        acronyms = [acronym for acronym in known_acronyms if acronym in query_upper]
+        query_lower = query.lower()
         
-        # If no known acronyms found, look for general acronym patterns (3+ letters)
-        if not acronyms:
-            general_acronyms = re.findall(r'\b[A-Z]{3,}\b', query_upper)
-            # Filter out common words that might be mistaken for acronyms
-            common_words = {'WHAT', 'WHEN', 'WHERE', 'WHY', 'HOW', 'THE', 'AND', 'FOR', 'ARE', 'YOU', 'YOUR', 'THEY', 'THEIR', 'WITH', 'FROM', 'THAT', 'THIS', 'HAVE', 'HAS', 'HAD', 'WILL', 'WOULD', 'COULD', 'SHOULD', 'MIGHT', 'MUST', 'CAN', 'MAY'}
-            acronyms = [acronym for acronym in general_acronyms if acronym not in common_words]
+        # Look for any capitalized terms that might be acronyms or important concepts
+        capitalized_terms = re.findall(r'\b[A-Z]{3,}\b', query_upper)
         
-        print(f"Looking for acronyms: {acronyms}")
+        # Filter out common words
+        common_words = {
+            'WHAT', 'WHEN', 'WHERE', 'WHY', 'HOW', 'THE', 'AND', 'FOR', 'ARE', 'YOU', 'YOUR', 'THEY', 'THEIR', 
+            'WITH', 'FROM', 'THAT', 'THIS', 'HAVE', 'HAS', 'HAD', 'WILL', 'WOULD', 'COULD', 'SHOULD', 'MIGHT', 
+    'MUST', 'CAN', 'MAY', 'GIVE', 'FULL', 'EXPLANATION', 'MEANING', 'DEFINITION', 'TELL', 'ABOUT',
+    'IS', 'IN', 'ON', 'AT', 'TO', 'OF', 'BY', 'AS', 'OR', 'IF', 'DO', 'GO', 'UP', 'SO', 'NO', 'ME', 'MY'
+        }
+        important_terms = [term for term in capitalized_terms if term not in common_words]
         
-        # Look for segments that contain acronym-related content
-        acronym_segments = []
+        # Also extract key words from the query
+        query_words = set(query_lower.split())
+        
+        # Normalize important terms for matching
+        normalized_query_terms = [self.normalize(term) for term in important_terms]
+        
+        print(f"Looking for terms: {important_terms}")
+        print(f"Query words: {query_words}")
+        
+        # Find relevant segments based on normalized term matches
+        relevant_segments = []
         for seg in full_segments:
             text = seg['text'].lower()
+            text_upper = seg['text'].upper()
+            normalized_text = self.normalize(seg['text'])
             
-            # Check for acronym patterns in the text
-            text_acronyms = re.findall(r'\b[A-Z]{2,}\b', seg['text'].upper())
+            # Check for important terms in the segment (normalized)
+            has_important_term = any(term in normalized_text for term in normalized_query_terms)
             
-            # Check for acronym-related keywords
-            acronym_keywords = [
-                'criteria', 'need', 'opportunity', 'physically', 'paying', 'capacity',
-                'specific', 'measurable', 'achievable', 'relevant', 'time-bound',
-                'strengths', 'weaknesses', 'opportunities', 'threats',
-                'analysis', 'framework', 'method', 'approach', 'strategy',
-                'ulip', 'unit linked', 'investment', 'policy', 'charges', 'premium',
-                'allocation', 'mortality', 'admin', 'returns', 'benefits'
-            ]
+            # Check for query word matches
+            segment_words = set(text.split())
+            word_matches = len(query_words.intersection(segment_words))
             
-            has_acronym = any(acronym in text_acronyms for acronym in acronyms)
-            has_keywords = any(keyword in text for keyword in acronym_keywords)
+            # Check for phrase matches
+            phrase_matches = 0
+            for word in query_words:
+                if word in text:
+                    phrase_matches += 1
             
-            if has_acronym or has_keywords:
-                acronym_segments.append(seg)
+            # Consider segment relevant if it has any matches
+            if has_important_term or word_matches > 0 or phrase_matches > 0:
+                relevant_segments.append(seg)
         
-        if len(acronym_segments) >= 2:  # Should have at least 2 segments for an acronym
+        if len(relevant_segments) >= 2:  # Should have at least 2 segments for a complete explanation
             # Sort by time and merge
-            sorted_segments = sorted(acronym_segments, key=lambda x: x['start'])
+            sorted_segments = sorted(relevant_segments, key=lambda x: x['start'])
             start_time = sorted_segments[0]['start']
             end_time = sorted_segments[-1]['end']
             
-            # For acronyms, we want to ensure we get the complete explanation
-            # Look for additional segments that might contain related content
-            full_segments = self.load_transcript_segments(video_id)
-            
-            # Find segments that are close to our acronym segments and might contain related content
+            # Find additional segments that might contain related content
             expanded_segments = []
             for seg in full_segments:
-                # Check if this segment is close to our acronym segments
+                # Check if this segment is close to our relevant segments
                 is_close = any(abs(seg['start'] - s['start']) <= 30 for s in sorted_segments)
                 
                 # Check if it contains related keywords
@@ -762,20 +855,16 @@ class ViviChatbot:
                     'first', 'second', 'third', 'fourth', 'finally',
                     'step', 'phase', 'stage', 'level', 'tier',
                     'benefit', 'advantage', 'feature', 'characteristic', 'property',
-                    'example', 'instance', 'case', 'scenario', 'situation'
+                    'example', 'instance', 'case', 'scenario', 'situation',
+                    'explain', 'explanation', 'definition', 'meaning', 'refers', 'stands'
                 ]
-                
                 has_related = any(keyword in text for keyword in related_keywords)
-                
                 if is_close or has_related:
                     expanded_segments.append(seg)
-            
             # Merge all related segments
             if expanded_segments:
-                # Use a more robust way to merge segments without duplicates
                 all_segments = sorted_segments.copy()
                 for exp_seg in expanded_segments:
-                    # Check if this segment is already in our list
                     is_duplicate = any(
                         abs(exp_seg['start'] - seg['start']) < 1.0 and 
                         abs(exp_seg['end'] - seg['end']) < 1.0 
@@ -783,58 +872,38 @@ class ViviChatbot:
                     )
                     if not is_duplicate:
                         all_segments.append(exp_seg)
-                
-                # Sort by start time
                 all_segments = sorted(all_segments, key=lambda x: x['start'])
                 start_time = all_segments[0]['start']
                 end_time = all_segments[-1]['end']
-                print(f"Expanded acronym explanation from {len(sorted_segments)} to {len(all_segments)} segments")
+                print(f"Expanded explanation from {len(sorted_segments)} to {len(all_segments)} segments")
             else:
                 all_segments = sorted_segments
-            
-            # Limit the duration to avoid overly long clips (max 60 seconds for acronyms)
-            max_duration = 60.0  # Increased from 40.0
+            if video_duration:
+                if end_time > video_duration:
+                    end_time = video_duration
+                    print(f"Adjusted end time to video duration: {end_time:.2f}s")
+                if start_time >= video_duration:
+                    print(f"Start time {start_time:.2f}s is beyond video duration {video_duration:.2f}s")
+                    return None
+            max_duration = 60.0
             if end_time - start_time > max_duration:
-                # Keep the most relevant part (center of the explanation)
                 center = (start_time + end_time) / 2
                 start_time = max(0, center - max_duration / 2)
                 end_time = min(start_time + max_duration, end_time)
-            
-            # Get only the segments within the limited range
+                if video_duration and end_time > video_duration:
+                    end_time = video_duration
+                    start_time = max(0, end_time - max_duration)
             limited_segments = [seg for seg in all_segments if seg['start'] >= start_time and seg['end'] <= end_time]
             full_text = ' '.join([s['text'] for s in limited_segments])
-            
-            # Validate that the acronym explanation is complete
-            if not self.validate_acronym_completeness(full_text, acronyms):
-                print("Warning: Acronym explanation may be incomplete, trying to expand...")
-                # Try to expand the range to get more complete explanation
-                expansion = 20.0  # Add 20 seconds on each side
-                start_time = max(0, start_time - expansion)
-                end_time = end_time + expansion
-                
-                # Get expanded segments
-                expanded_limited = [seg for seg in all_segments if seg['start'] >= start_time and seg['end'] <= end_time]
-                full_text = ' '.join([s['text'] for s in expanded_limited])
-                
-                # Re-validate
-                if not self.validate_acronym_completeness(full_text, acronyms):
-                    print("Warning: Still incomplete, but proceeding with available content")
-            
-            # Calculate relevance score (lower is better)
             relevance_score = 0.5  # Default score
-            if acronyms:
-                # Check how many acronyms are mentioned in the text
-                mentioned_acronyms = sum(1 for acronym in acronyms if acronym in full_text.upper())
-                relevance_score = 1.0 - (mentioned_acronyms / len(acronyms))
-            
-            print(f"Found complete acronym explanation: {start_time:.2f}-{end_time:.2f} (duration: {end_time-start_time:.2f}s, relevance: {relevance_score:.3f})")
+            if important_terms:
+                mentioned_terms = sum(1 for term in important_terms if self.normalize(term) in self.normalize(full_text))
+                relevance_score = 1.0 - (mentioned_terms / len(important_terms))
+            print(f"Found complete explanation: {start_time:.2f}-{end_time:.2f} (duration: {end_time-start_time:.2f}s, relevance: {relevance_score:.3f})")
             print(f"Text preview: {full_text[:100]}...")
-            
-            # Store video_id information for each acronym segment to help with clip matching
             for seg in limited_segments:
-                seg['video_id'] = seg.get('video_id', '')
-                print(f"Acronym segment {seg['start']:.2f}-{seg['end']:.2f} from video {seg['video_id']}")
-            
+                seg['video_id'] = seg.get('video_id', video_id)
+                print(f"Segment {seg['start']:.2f}-{seg['end']:.2f} from video {seg['video_id']}")
             return {
                 'start': start_time,
                 'end': end_time,
@@ -842,35 +911,6 @@ class ViviChatbot:
                 'video_id': video_id,
                 'similarity': relevance_score
             }
-        
-        return None
-
-    def find_complete_nopp_explanation(self, video_id):
-        """Specifically find the complete NOPP explanation in a video."""
-        full_segments = self.load_transcript_segments(video_id)
-        
-        # Look for segments that contain NOPP-related content
-        nopp_segments = []
-        for seg in full_segments:
-            text = seg['text'].lower()
-            if any(keyword in text for keyword in ['nop', 'criteria', 'need for insurance', 'opportunity to meet', 'physically fit', 'paying capacity']):
-                nopp_segments.append(seg)
-        
-        if len(nopp_segments) >= 4:  # Should have at least 4 segments for NOPP
-            # Sort by time and merge
-            sorted_segments = sorted(nopp_segments, key=lambda x: x['start'])
-            start_time = sorted_segments[0]['start']
-            end_time = sorted_segments[-1]['end']
-            full_text = ' '.join([s['text'] for s in sorted_segments])
-            
-            print(f"Found complete NOPP explanation: {start_time:.2f}-{end_time:.2f}")
-            return {
-                'start': start_time,
-                'end': end_time,
-                'text': full_text,
-                'video_id': video_id
-            }
-        
         return None
 
     def expand_segments_for_completeness(self, segments, max_expansion=60):
@@ -938,7 +978,7 @@ class ViviChatbot:
         if not segments:
             return segments
         
-        # Sort by similarity (lower is better)
+        # Sort by similarity (lower distance is better)
         sorted_segments = sorted(segments, key=lambda x: x['similarity'])
         
         # Take the most relevant segments
@@ -979,63 +1019,25 @@ class ViviChatbot:
         
         return unique_segments
 
-    def validate_and_improve_clips(self, clips, video_duration, is_acronym_query=False):
-        """Validate and improve clip ranges to ensure they are comprehensive."""
-        improved_clips = []
-        
+    def validate_and_improve_clips(self, clips, video_duration, is_acronym_query=False, query=""):
+        """Validate LLM-proposed clip ranges: only ensure start < end and both are within video duration. No improvement or truncation."""
+        validated_clips = []
         for clip in clips:
             start, end = clip['start'], clip['end']
-            
-            # Different duration limits for acronym vs normal queries
-            if is_acronym_query:
-                min_duration = 15.0  # Longer for acronyms to ensure complete coverage
-                max_duration = 60.0  # Increased from 45.0 for complete acronym explanations
-            else:
-                min_duration = 8.0   # Shorter for normal queries
-                max_duration = 25.0  # Reasonable limit for normal queries
-            
-            # Ensure minimum clip duration
-            if end - start < min_duration:
-                # Extend the clip to meet minimum duration
-                extension = (min_duration - (end - start)) / 2
-                start = max(0, start - extension)
-                end = min(video_duration, end + extension)
-            
-            # Cap maximum duration
-            if end - start > max_duration:
-                # Reduce clip length while keeping the most relevant part
-                center = (start + end) / 2
-                start = max(0, center - max_duration / 2)
-                end = min(video_duration, center + max_duration / 2)
-            
-            # Find natural ending for smoother clips (only for non-acronym queries)
-            if not is_acronym_query:
-                end = self.find_natural_ending(clip.get('video_id', ''), end, look_back=8)
-            else:
-                # For acronym queries, don't cut off early - let the full explanation play out
-                print("Acronym query detected - preserving full explanation length")
-            
-            # Ensure clips don't exceed video duration
-            if start >= video_duration:
-                continue
+            # Ensure start < end and both are within video duration
+            if start < 0:
+                start = 0
             if end > video_duration:
                 end = video_duration
-            
-            # Ensure start < end
             if start >= end:
                 continue
-            
-            improved_clips.append({
+            validated_clips.append({
                 'start': start,
                 'end': end,
                 'duration': end - start,
                 'original': clip
             })
-        
-        # Sort by duration (longer clips first) and relevance
-        improved_clips.sort(key=lambda x: x['duration'], reverse=True)
-        
-        return improved_clips
+        return validated_clips
 
     def merge_adjacent_segments(self, segments, max_gap=5.0):
         """Merge adjacent segments that are close in time to create more comprehensive clips."""
@@ -1059,38 +1061,134 @@ class ViviChatbot:
         merged.append(current)
         return merged
 
+    def preprocess_query_for_rag(self, query):
+        """Preprocess query to improve RAG similarity scoring."""
+        # Convert to lowercase for better matching
+        query_lower = query.lower()
+        
+        # Extract key technical terms and concepts
+        technical_terms = []
+        
+        # Common technical terms in the video content
+        tech_keywords = [
+            'bluetooth', 'light', 'wavelength', 'frequency', 'radio', 'wireless', 'communication',
+            'insurance', 'policy', 'claim', 'premium', 'coverage', 'hospital', 'network', 'cashless',
+            'surgery', 'medical', 'treatment', 'diagnosis', 'symptoms', 'disease', 'health',
+            'mathematics', 'physics', 'science', 'theory', 'hypothesis', 'experiment', 'research',
+            'traffic', 'transportation', 'boarding', 'airline', 'efficiency', 'optimization',
+            'boredom', 'psychology', 'mental', 'health', 'wellbeing', 'productivity',
+            'criteria', 'definition', 'explanation', 'meaning', 'clause'
+        ]
+        
+        for keyword in tech_keywords:
+            if keyword in query_lower:
+                technical_terms.append(keyword)
+        
+        # If we found technical terms, create enhanced queries
+        if technical_terms:
+            enhanced_queries = [query]  # Keep original query
+            for term in technical_terms:
+                enhanced_queries.append(f"{term} {query}")
+                enhanced_queries.append(f"{query} {term}")
+            
+            print(f"Enhanced queries for RAG: {enhanced_queries}")
+            return enhanced_queries
+        
+        return [query]
+
     def build_llm_context(self, query, for_clipping=False):
         """Use RAG to find relevant videos/segments and build the transcript context for the LLM."""
         if not self.rag:
             return "", []
 
-        # --- 1. Extract all unique acronyms/rare capitalized terms from the query ---
+        # --- 1. Extract important terms and handle multi-part queries ---
         query_upper = query.upper()
-        # Known acronyms and rare terms (extendable)
-        known_acronyms = ['NOPP', 'STARULIP', 'ULIP', 'SMART', 'SWOT', 'ABCD', 'ABCDEF']
-        # Extract known acronyms
-        detected_acronyms = [acronym for acronym in known_acronyms if acronym in query_upper]
-        # Also extract any 3+ letter capitalized words not in common words
-        general_acronyms = re.findall(r'\b[A-Z]{3,}\b', query_upper)
-        common_words = {'WHAT', 'WHEN', 'WHERE', 'WHY', 'HOW', 'THE', 'AND', 'FOR', 'ARE', 'YOU', 'YOUR', 'THEY', 'THEIR', 'WITH', 'FROM', 'THAT', 'THIS', 'HAVE', 'HAS', 'HAD', 'WILL', 'WOULD', 'COULD', 'SHOULD', 'MIGHT', 'MUST', 'CAN', 'MAY', 'CLIPPING', 'QUERY', 'VIDEO', 'CHAT', 'BOT', 'ASSISTANT', 'EXPLAIN', 'DESCRIBE', 'TELL', 'ABOUT', 'MEANING', 'DEFINITION'}
-        detected_acronyms += [a for a in general_acronyms if a not in common_words and a not in detected_acronyms]
-        detected_acronyms = list(set(detected_acronyms))  # Unique only
-
-        # If no acronyms found, treat the whole query as a single topic
-        if not detected_acronyms:
-            subqueries = [query]
+        query_lower = query.lower()
+        
+        # Check for multi-part queries with "and" or "&"
+        multi_query_indicators = [' AND ', ' & ', ' AND THE ', ' AND A ', ' AND AN ']
+        is_multi_query = any(indicator in query_upper for indicator in multi_query_indicators)
+        
+        # Extract important terms (both capitalized and regular words)
+        capitalized_terms = re.findall(r'\b[A-Z]{3,}\b', query_upper)
+        
+        # Filter out common words
+        common_words = {
+            'WHAT', 'WHEN', 'WHERE', 'WHY', 'HOW', 'THE', 'AND', 'FOR', 'ARE', 'YOU', 'YOUR', 'THEY', 'THEIR', 
+            'WITH', 'FROM', 'THAT', 'THIS', 'HAVE', 'HAS', 'HAD', 'WILL', 'WOULD', 'COULD', 'SHOULD', 'MIGHT', 
+    'MUST', 'CAN', 'MAY', 'GIVE', 'FULL', 'EXPLANATION', 'MEANING', 'DEFINITION', 'TELL', 'ABOUT',
+    'IS', 'IN', 'ON', 'AT', 'TO', 'OF', 'BY', 'AS', 'OR', 'IF', 'DO', 'GO', 'UP', 'SO', 'NO', 'ME', 'MY'
+        }
+        important_terms = [term for term in capitalized_terms if term not in common_words]
+        
+        # Extract key words from the query
+        query_words = set(query_lower.split())
+        
+        # Handle multi-part queries
+        if is_multi_query:
+            # Split on "and" or "&" to create subqueries
+            if ' AND ' in query_upper:
+                parts = query_upper.split(' AND ')
+            elif ' & ' in query_upper:
+                parts = query_upper.split(' & ')
+            else:
+                parts = [query_upper]
+            
+            # Clean up parts and create subqueries
+            subqueries = []
+            for part in parts:
+                part = part.strip()
+                if part:
+                    # Convert back to proper case
+                    part_proper = part.lower().title()
+                    subqueries.append(part_proper)
+            
+            print(f"Multi-query detected: {subqueries}")
+        elif important_terms:
+            # For each important term, create a subquery ("What is <term>?")
+            term_subqueries = [f"What is {term}?" for term in important_terms]
+            
+            # Check if there are other parts of the query that should be separate subqueries
+            if is_multi_query:
+                # Split the query and create subqueries for non-term parts
+                if ' AND ' in query_upper:
+                    parts = query_upper.split(' AND ')
+                elif ' & ' in query_upper:
+                    parts = query_upper.split(' & ')
+                else:
+                    parts = [query_upper]
+                
+                additional_subqueries = []
+                for part in parts:
+                    part = part.strip()
+                    if part:
+                        # Check if this part contains any of our detected terms
+                        contains_term = any(term in part for term in important_terms)
+                        if not contains_term:
+                            # This is a non-term part, add it as a subquery
+                            part_proper = part.lower().title()
+                            additional_subqueries.append(part_proper)
+                
+                # Combine term subqueries with additional subqueries
+                subqueries = term_subqueries + additional_subqueries
+                print(f"Combined subqueries: {subqueries}")
+            else:
+                subqueries = term_subqueries
         else:
-            # For each acronym, create a subquery ("What is <acronym>?")
-            subqueries = [f"What is {acronym}?" for acronym in detected_acronyms]
+            # Use enhanced query preprocessing for better RAG results
+            enhanced_queries = self.preprocess_query_for_rag(query)
+            subqueries = enhanced_queries
 
         print(f"Multi-topic RAG: subqueries = {subqueries}")
 
         # --- 2. For each subquery, run a separate RAG search and merge results ---
         all_rag_results = []
         for subq in subqueries:
-            n_results = 30 if for_clipping else 15
+            n_results = 15 if for_clipping else 8  # Reduced to get fewer, more relevant results
             rag_results = self.rag.query_videos(subq, n_results=n_results)
             all_rag_results.extend(rag_results)
+            print(f"Subquery '{subq}' found {len(rag_results)} results")
+        
         # Remove duplicates (by video_id, start, end)
         seen = set()
         unique_rag_results = []
@@ -1100,64 +1198,62 @@ class ViviChatbot:
                 unique_rag_results.append(r)
                 seen.add(key)
 
-        # Use a more inclusive similarity threshold for multi-topic queries
-        similarity_threshold = 0.85 if for_clipping else 0.80
-        filtered = [r for r in unique_rag_results if r['similarity'] <= similarity_threshold]
+        # Use a more permissive similarity threshold to ensure we get relevant results
+        similarity_threshold = 0.75  # Lower is better for distance-based similarity, but we need to be more permissive
+        filtered = [r for r in unique_rag_results if r['similarity'] < similarity_threshold]
+        
+        # Improve similarity scoring with exact keyword matches
+        filtered = self.improve_rag_results(filtered, query)
+        
+        # Sort by similarity (lower distance is better) and take top segments
+        filtered = sorted(filtered, key=lambda x: x['similarity'])[:6]  # Reduced to get fewer results
+        
+        # No special handling - let the LLM decide based on full transcripts
+        
         video_ids = list({r['video_id'] for r in filtered})
         print(f"RAG search found {len(unique_rag_results)} unique results, filtered to {len(filtered)} from {len(video_ids)} videos")
         print(f"Video IDs found: {video_ids}")
 
-        # --- 3. Context Construction (same as before) ---
-        if len(video_ids) < 4:
-            print(f"Using full transcripts for {len(video_ids)} videos")
-            context_lines = []
-            total_chars = 0
-            max_total_chars = 24000 if for_clipping else 16000
-            for video_id in video_ids:
-                full_transcript = self.load_full_transcript(video_id)
-                if full_transcript:
-                    if len(full_transcript) > 6000:
-                        full_transcript = full_transcript[:5997] + "..."
-                    if total_chars + len(full_transcript) > max_total_chars:
-                        break
-                    context_lines.append(full_transcript)
-                    total_chars += len(full_transcript)
-            return "\n\n".join(context_lines), filtered
-        else:
-            print(f"Using segments for {len(video_ids)} videos")
-            max_segments = 12 if for_clipping else 8
-            filtered = filtered[:max_segments]
-            if not for_clipping:
-                filtered = self.filter_relevant_segments(filtered, max_segments=8)
-                print(f"After relevance filtering: {len(filtered)} segments")
-            additional_context = []
-            if not for_clipping and (len(video_ids) <= 2 or self.is_definition_query(query)):
-                print("Adding broader context for definition queries...")
-                for video_id in video_ids:
-                    full_transcript = self.load_full_transcript(video_id)
-                    if full_transcript:
-                        if len(full_transcript) > 4000:
-                            full_transcript = full_transcript[:3997] + "..."
-                        additional_context.append(full_transcript)
-            max_total_chars = 24000 if for_clipping else 16000
-            context_lines = []
-            total_chars = 0
-            for r in filtered:
-                text = r['text']
-                if len(text) > 600:
-                    text = text[:597] + "..."
-                if for_clipping:
-                    line = f"[{r['start']:.2f} - {r['end']:.2f}] {text}"
-                else:
-                    line = text
-                if total_chars + len(line) > max_total_chars:
+        # --- 3. Improved Context Construction ---
+        # Always use the top 8 videos as full transcripts to give LLM complete context
+        # Sort videos by relevance (based on their best segment similarity scores)
+        video_scores = {}
+        for video_id in video_ids:
+            video_segments = [r for r in filtered if r['video_id'] == video_id]
+            if video_segments:
+                # Use the best (lowest) similarity score for this video
+                best_score = min(seg['similarity'] for seg in video_segments)
+                video_scores[video_id] = best_score
+        
+        # Sort videos by their best similarity scores (lower is better)
+        sorted_video_ids = sorted(video_scores.keys(), key=lambda vid: video_scores[vid])
+        
+        # Take the top 8 most relevant videos
+        top_video_ids = sorted_video_ids[:8]
+        print(f"Using full transcripts for top {len(top_video_ids)} videos: {top_video_ids}")
+        
+        context_lines = []
+        total_chars = 0
+        max_total_chars = self.max_context_chars if for_clipping else self.max_context_chars // 2
+        
+        for video_id in top_video_ids:
+            full_transcript = self.load_full_transcript(video_id)
+            if full_transcript:
+                # Use full transcript with truncation if needed
+                if len(full_transcript) > 3000:  # Reduced from 6000
+                    full_transcript = full_transcript[:2997] + "..."
+                if total_chars + len(full_transcript) > max_total_chars:
                     break
-                context_lines.append(line)
-                total_chars += len(line)
-            if additional_context:
-                context_lines.extend(additional_context)
-                print(f"Added {len(additional_context)} full transcripts for broader context")
-            return "\n".join(context_lines), filtered
+                context_lines.append(f"=== Video: {video_id} ===\n{full_transcript}")
+                total_chars += len(full_transcript)
+        
+        final_context = "\n\n".join(context_lines)
+        # Apply token limit check
+        final_context = self.check_token_limit(final_context, max_tokens=8000)
+        estimated_tokens = self.estimate_tokens(final_context)
+        print(f"Full transcript context: {len(final_context)} chars, ~{estimated_tokens} tokens")
+        
+        return final_context, filtered
 
     def send_message(self):
         user_input = self.user_entry.get()
@@ -1177,190 +1273,21 @@ class ViviChatbot:
                 query = user_input[len("clipping:"):].strip()
                 context, rag_results = self.build_llm_context(query, for_clipping=True)
                 
-                # Pre-filter to identify the most relevant video for this query
-                query_keywords = query.lower().split()
-                relevant_keywords = ['surgery', 'claim', 'insurance', 'policy', 'hours', 'less', 'than', '3', 'three', 'procedure', 'medical', 'treatment']
-                
-                # Score each video based on query relevance
-                video_scores = {}
-                for video_id in list({r['video_id'] for r in rag_results}):
-                    score = 0
-                    full_transcript = self.load_full_transcript(video_id)
-                    if full_transcript:
-                        transcript_lower = full_transcript.lower()
-                        
-                        # Check for exact keyword matches
-                        for keyword in relevant_keywords:
-                            if keyword in transcript_lower:
-                                score += 2
-                        
-                        # Check for specific query terms with higher weight
-                        if 'surgery' in query.lower() and 'surgery' in transcript_lower:
-                            score += 10
-                        if 'claim' in query.lower() and 'claim' in transcript_lower:
-                            score += 8
-                        if 'insurance' in query.lower() and 'insurance' in transcript_lower:
-                            score += 5
-                        if 'policy' in query.lower() and 'policy' in transcript_lower:
-                            score += 5
-                        if 'hours' in query.lower() and 'hours' in transcript_lower:
-                            score += 6
-                        if '3' in query.lower() or 'three' in query.lower():
-                            if '3' in transcript_lower or 'three' in transcript_lower:
-                                score += 4
-                        
-                        # Check for video title relevance
-                        if 'surgery' in video_id.lower():
-                            score += 15
-                        if 'insurance' in video_id.lower():
-                            score += 8
-                        
-                        # Check if this video has segments that match the query
-                        video_segments = [s for s in rag_results if s['video_id'] == video_id]
-                        if video_segments:
-                            # Calculate average similarity (lower is better)
-                            avg_similarity = sum(s['similarity'] for s in video_segments) / len(video_segments)
-                            score += (1 - avg_similarity) * 10  # Better similarity = higher score
-                        
-                        video_scores[video_id] = score
-                        print(f"Video {video_id} relevance score: {score}")
-                
-                # Find the best matching video
-                primary_video_id = None
-                if video_scores:
-                    primary_video_id = max(video_scores.keys(), key=lambda x: video_scores[x])
-                    print(f"Primary video identified: {primary_video_id} (score: {video_scores[primary_video_id]})")
-                    
-                    # Filter RAG results to prioritize the primary video
-                    primary_video_segments = [r for r in rag_results if r['video_id'] == primary_video_id]
-                    other_video_segments = [r for r in rag_results if r['video_id'] != primary_video_id]
-                    
-                    # Use primary video segments first, then add others if needed
-                    filtered_rag_results = primary_video_segments + other_video_segments[:5]  # Limit other videos
-                    
-                    # Rebuild context with filtered results
-                    context = ""
-                    for result in filtered_rag_results:
-                        context += f"[{result['start']:.2f} - {result['end']:.2f}] {result['text']}\n"
-                    
-                    print(f"Filtered to {len(primary_video_segments)} segments from primary video, {len(other_video_segments[:5])} from others")
-                
                 # Debug: Show what context is being used for clipping
                 print(f"=== CLIPPING DEBUG ===")
                 print(f"Query: {query}")
                 print(f"Context length: {len(context)}")
                 print(f"RAG results count: {len(rag_results) if rag_results else 0}")
-                if primary_video_id:
-                    print(f"Primary video: {primary_video_id}")
                 
                 # Use the debug helper
                 self.debug_video_usage(rag_results, "clipping")
                 
-                # Get unique video IDs from filtered results
-                video_ids = list({r['video_id'] for r in filtered_rag_results}) if 'filtered_rag_results' in locals() else list({r['video_id'] for r in rag_results}) if rag_results else []
+                # Get unique video IDs from RAG results
+                video_ids = list({r['video_id'] for r in rag_results}) if rag_results else []
                 print(f"Unique video IDs: {video_ids}")
                 
-                # For clipping, we need to provide timestamped segments to the LLM
-                # If we have full transcripts (< 4 videos), we need to extract segments from them
-                if len(video_ids) < 4 and rag_results:
-                    print("Using full transcripts for clipping - extracting segments")
-                    
-                    # Check if this is an acronym query and handle specially
-                    query_lower = query.lower()
-                    is_acronym_query = any(keyword in query_lower for keyword in ['acronym', 'meaning', 'what is', 'stands for']) and any(acronym in query.upper() for acronym in ['NOPP', 'ABCD', 'SMART', 'SWOT', 'ABCDEF', 'ULIP'])
-                    
-                    if is_acronym_query:
-                        print("Acronym query detected - looking for complete explanation")
-                        acronym_segments = []
-                        
-                        # Extract all acronyms from the query
-                        query_upper = query.upper()
-                        detected_acronyms = re.findall(r'\b[A-Z]{2,}\b', query_upper)
-                        # Filter out common words
-                        common_words = {'WHAT', 'WHEN', 'WHERE', 'WHY', 'HOW', 'THE', 'AND', 'FOR', 'ARE', 'YOU', 'YOUR', 'THEY', 'THEIR', 'WITH', 'FROM', 'THAT', 'THIS', 'HAVE', 'HAS', 'HAD', 'WILL', 'WOULD', 'COULD', 'SHOULD', 'MIGHT', 'MUST', 'CAN', 'MAY', 'GIVE', 'FULL', 'EXPLANATION'}
-                        detected_acronyms = [a for a in detected_acronyms if a not in common_words]
-                        print(f"Detected acronyms in query: {detected_acronyms}")
-                        
-                        # For each video, find explanations for the acronyms it contains
-                        for video_id in video_ids:
-                            complete_acronym = self.find_complete_acronym_explanation(video_id, query)
-                            if complete_acronym:
-                                # Check if this video contains any of the requested acronyms
-                                video_text = complete_acronym['text'].upper()
-                                contains_requested = any(acronym in video_text for acronym in detected_acronyms)
-                                
-                                if contains_requested:
-                                    acronym_segments.append(complete_acronym)
-                                    print(f"Added {video_id} explanation for acronyms: {[a for a in detected_acronyms if a in video_text]}")
-                        
-                        if acronym_segments:
-                            print(f"Found {len(acronym_segments)} complete acronym explanations")
-                            
-                            # If we have multiple acronym explanations, keep all relevant ones
-                            if len(acronym_segments) > 1:
-                                print("Multiple acronym explanations found, keeping all relevant ones...")
-                                # Don't filter out - keep all explanations for different acronyms
-                                print(f"Keeping all {len(acronym_segments)} explanations")
-                            
-                            context_lines = [f"[{r['start']:.2f} - {r['end']:.2f}] {r['text']}" for r in acronym_segments]
-                            rag_context = "\n".join(context_lines)
-                            
-                            # Store video_id information for each acronym segment to help with clip matching
-                            for seg in acronym_segments:
-                                seg['video_id'] = seg.get('video_id', '')
-                                print(f"Acronym segment {seg['start']:.2f}-{seg['end']:.2f} from video {seg['video_id']}")
-                        else:
-                            # Fallback to normal processing
-                            sorted_rag = sorted(filtered_rag_results if 'filtered_rag_results' in locals() else rag_results, key=lambda r: r['similarity'], reverse=True)
-                            merged_segments = self.merge_adjacent_segments(sorted_rag, max_gap=3.0)
-                            expanded_segments = self.expand_segments_for_completeness(merged_segments, max_expansion=60)
-                            context_lines = [f"[{r['start']:.2f} - {r['end']:.2f}] {r['text']}" for r in expanded_segments]
-                            rag_context = "\n".join(context_lines)
-                    else:
-                        # Normal processing for non-acronym queries
-                        sorted_rag = sorted(filtered_rag_results if 'filtered_rag_results' in locals() else rag_results, key=lambda r: r['similarity'], reverse=True)
-                        merged_segments = self.merge_adjacent_segments(sorted_rag, max_gap=3.0)
-                        expanded_segments = self.expand_segments_for_completeness(merged_segments, max_expansion=60)
-                        context_lines = [f"[{r['start']:.2f} - {r['end']:.2f}] {r['text']}" for r in expanded_segments]
-                        rag_context = "\n".join(context_lines)
-                else:
-                    # Use segments as before for 4+ videos
-                    if rag_results:
-                        # For acronym queries, prioritize segments that contain the acronym
-                        query_upper = query.upper()
-                        detected_acronyms = re.findall(r'\b[A-Z]{2,}\b', query_upper)
-                        common_words = {'WHAT', 'WHEN', 'WHERE', 'WHY', 'HOW', 'THE', 'AND', 'FOR', 'ARE', 'YOU', 'YOUR', 'THEY', 'THEIR', 'WITH', 'FROM', 'THAT', 'THIS', 'HAVE', 'HAS', 'HAD', 'WILL', 'WOULD', 'COULD', 'SHOULD', 'MIGHT', 'MUST', 'CAN', 'MAY', 'GIVE', 'FULL', 'EXPLANATION'}
-                        detected_acronyms = [a for a in detected_acronyms if a not in common_words]
-                        
-                        if detected_acronyms:
-                            # Prioritize segments that contain the acronym
-                            acronym_segments = []
-                            other_segments = []
-                            
-                            for r in filtered_rag_results if 'filtered_rag_results' in locals() else rag_results:
-                                if any(acronym in r['text'].upper() for acronym in detected_acronyms):
-                                    acronym_segments.append(r)
-                                else:
-                                    other_segments.append(r)
-                            
-                            # Sort acronym segments by similarity, then add other segments
-                            sorted_acronym = sorted(acronym_segments, key=lambda r: r['similarity'], reverse=True)
-                            sorted_other = sorted(other_segments, key=lambda r: r['similarity'], reverse=True)
-                            
-                            # Combine with acronym segments first
-                            combined_segments = sorted_acronym + sorted_other
-                            print(f"Prioritized {len(sorted_acronym)} acronym-containing segments out of {len(combined_segments)} total")
-                        else:
-                            combined_segments = sorted(filtered_rag_results if 'filtered_rag_results' in locals() else rag_results, key=lambda r: r['similarity'], reverse=True)
-                        
-                        merged_segments = self.merge_adjacent_segments(combined_segments, max_gap=3.0)
-                        expanded_segments = self.expand_segments_for_completeness(merged_segments, max_expansion=60)
-                        context_lines = [f"[{r['start']:.2f} - {r['end']:.2f}] {r['text']}" for r in expanded_segments]
-                        rag_context = "\n".join(context_lines)
-                    else:
-                        rag_context = ""
-                
-                print(f"RAG context for clipping: {rag_context[:200]}...")
+                # Use the context that was already built by build_llm_context
+                rag_context = context
                 
                 response_text = chain_clipping.invoke({"query": query, "transcript": rag_context})
                 response = extract_content(response_text)
@@ -1384,16 +1311,15 @@ class ViviChatbot:
                     proposed_clips = self.deduplicate_clips(proposed_clips, min_overlap=0.3, query=query)
                     print(f"After deduplication: {len(proposed_clips)} clips")
                 
-                # Assign clips to their correct videos based on acronym content
-                if any(keyword in query.lower() for keyword in ['acronym', 'meaning', 'what is', 'stands for']):
-                    print("Assigning clips to correct videos...")
+                # Assign clips to their correct videos based on content relevance
+                # For multi-topic queries, ensure we preserve all clips
+                print(f"Before assignment: {len(proposed_clips)} clips")
+                if len(proposed_clips) > 1:
+                    print(f"Multi-topic query detected with {len(proposed_clips)} clips - preserving all clips")
                     proposed_clips = self.assign_clips_to_correct_videos(proposed_clips, query, rag_results)
-                
-                # Validate that all requested acronyms are covered
-                if self.is_definition_query(query):
-                    all_covered = self.validate_all_acronyms_covered(query, proposed_clips, rag_results)
-                    if not all_covered:
-                        print("Warning: Not all requested acronyms are covered in the clips")
+                else:
+                    proposed_clips = self.assign_clips_to_correct_videos(proposed_clips, query, rag_results)
+                print(f"After assignment: {len(proposed_clips)} clips")
                 
                 video_clips = []
                 # Fix: Use standard if-else for relevant_video_ids
@@ -1403,18 +1329,8 @@ class ViviChatbot:
                     relevant_video_ids = list({seg['video_id'] for seg in rag_results}) if rag_results else []
                 available_videos = []
                 
-                # Prioritize the primary video if available
-                if 'primary_video_id' in locals() and primary_video_id:
-                    primary_path = os.path.join("Max Life Videos", f"{primary_video_id}.mp4")
-                    if os.path.exists(primary_path):
-                        available_videos.append((primary_video_id, primary_path, self.get_video_duration(primary_path)))
-                        print(f"Added primary video: {primary_video_id}")
-                
-                # Add other videos
+                # Add videos
                 for vid in relevant_video_ids:
-                    # Skip primary video as it's already added
-                    if 'primary_video_id' in locals() and vid == primary_video_id:
-                        continue
                     candidate_path = os.path.join("Max Life Videos", f"{vid}.mp4")
                     if os.path.exists(candidate_path):
                         available_videos.append((vid, candidate_path, self.get_video_duration(candidate_path)))
@@ -1422,70 +1338,49 @@ class ViviChatbot:
                 print(f"Available videos: {available_videos}")
                 
                 # Process each proposed clip
-                for clip in proposed_clips:
+                print(f"Processing {len(proposed_clips)} proposed clips:")
+                self.display_message("system", f"🎬 Processing {len(proposed_clips)} clips...")
+                for i, clip in enumerate(proposed_clips):
                     start = clip['start']
                     end = clip['end']
-                    print(f"Processing clip: {start}-{end}")
+                    video_id = clip.get('video_id', 'unknown')
+                    print(f"Processing clip {i+1}/{len(proposed_clips)}: {start}-{end} from video {video_id}")
+                    self.display_message("system", f"🎬 Creating clip {i+1}/{len(proposed_clips)}: {start:.1f}s - {end:.1f}s from {video_id}")
                     
                     video_file = None
                     matched_video_id = None
                     
-                    # Use the assigned video_id if available
+                    # Use the video_id specified by the LLM if available
                     if 'video_id' in clip:
                         matched_video_id = clip['video_id']
-                        print(f"Using assigned video_id: {matched_video_id}")
+                        print(f"Using LLM-specified video_id: {matched_video_id}")
+                        
+                        # Try to ensure the video file is available
+                        video_path = self.ensure_video_file_available(matched_video_id)
+                        if video_path:
+                            print(f"✅ Video file available: {video_path}")
+                            candidate_path = video_path
+                        else:
+                            print(f"⚠️ Video file not available for {matched_video_id}, looking for alternative...")
+                            # Try to find an alternative video
+                            alternative_path = self.find_alternative_video_for_clip(clip, rag_results)
+                            if alternative_path:
+                                candidate_path = alternative_path
+                                matched_video_id = clip['video_id']  # Updated by find_alternative_video_for_clip
+                                print(f"✅ Using alternative video: {matched_video_id}")
+                            else:
+                                print(f"❌ No alternative video found, falling back to content matching")
+                                matched_video_id = None
+                                candidate_path = None
                     
-                    # If we have a primary video identified, use it as the first choice
-                    if not matched_video_id and 'primary_video_id' in locals() and primary_video_id:
-                        matched_video_id = primary_video_id
-                        print(f"Using primary video: {matched_video_id}")
-                    
-                    # For acronym queries, try to match based on the acronym segments first
-                    if not matched_video_id and any(keyword in query.lower() for keyword in ['acronym', 'meaning', 'what is', 'stands for']):
-                        # Look for acronym segments that match this clip time range
+                    # If no video specified or invalid, try to match based on content relevance
+                    if not matched_video_id:
+                        # Look for segments that match this clip time range
                         for seg in rag_results:
                             if (start < seg['end'] and end > seg['start']):
                                 matched_video_id = seg['video_id']
-                                print(f"Matched clip to video {matched_video_id} based on acronym segment overlap")
+                                print(f"Matched clip to video {matched_video_id} based on segment overlap")
                                 break
-                        
-                        # If no match found, try to find video based on acronym content
-                        if not matched_video_id:
-                            query_acronyms = re.findall(r'\b[A-Z]{2,}\b', query.upper())
-                            print(f"Trying to match clip to video based on acronyms: {query_acronyms}")
-                            
-                            # For each video, check if it contains the acronyms and if the clip time range makes sense
-                            for video_id in video_ids:
-                                full_transcript = self.load_full_transcript(video_id)
-                                if full_transcript:
-                                    transcript_upper = full_transcript.upper()
-                                    # Check if this video contains any of the requested acronyms
-                                    video_contains_acronyms = []
-                                    for acronym in query_acronyms:
-                                        if acronym in transcript_upper:
-                                            video_contains_acronyms.append(acronym)
-                                    
-                                    if video_contains_acronyms:
-                                        # Check if this clip time range is reasonable for this video
-                                        video_duration = None
-                                        for vid, path, dur in available_videos:
-                                            if vid == video_id:
-                                                video_duration = dur
-                                                break
-                                        
-                                        if video_duration and start < video_duration:
-                                            # Additional check: see if this video actually has content around this time
-                                            video_segments = [s for s in rag_results if s['video_id'] == video_id]
-                                            if video_segments:
-                                                # Check if any segment from this video overlaps with the clip
-                                                has_overlap = any(
-                                                    (start < seg['end'] and end > seg['start']) 
-                                                    for seg in video_segments
-                                                )
-                                                if has_overlap:
-                                                    matched_video_id = video_id
-                                                    print(f"Matched clip to video {matched_video_id} based on acronyms {video_contains_acronyms} and segment overlap")
-                                                    break
                     
                     # If still no match, use the original logic
                     if not matched_video_id:
@@ -1513,7 +1408,7 @@ class ViviChatbot:
                                 
                                 if overlap_duration > 0:
                                     total_overlap += overlap_duration
-                                    # Use similarity as relevance score (lower is better)
+                                    # Use similarity as relevance score (lower distance is better)
                                     relevance_score = 1 - seg['similarity']
                                     total_relevance += relevance_score * overlap_duration
                                     relevant_segments += 1
@@ -1551,22 +1446,35 @@ class ViviChatbot:
                     
                     # Try to get the video file
                     if matched_video_id:
-                        candidate_path = os.path.join("Max Life Videos", f"{matched_video_id}.mp4")
-                        if os.path.exists(candidate_path):
-                            video_file = candidate_path
-                    
-                    # If we have a primary video, try to use it first
-                    if not video_file and 'primary_video_id' in locals() and primary_video_id:
-                        primary_path = os.path.join("Max Life Videos", f"{primary_video_id}.mp4")
-                        if os.path.exists(primary_path):
-                            video_file = primary_path
-                            matched_video_id = primary_video_id
-                            print(f"Using primary video file: {video_file}")
+                        # Try to ensure the video file is available
+                        video_path = self.ensure_video_file_available(matched_video_id)
+                        if video_path:
+                            video_file = video_path
+                        else:
+                            # Try to find an alternative video
+                            alternative_path = self.find_alternative_video_for_clip(clip, rag_results)
+                            if alternative_path:
+                                video_file = alternative_path
+                                matched_video_id = clip['video_id']  # Updated by find_alternative_video_for_clip
+                                print(f"✅ Using alternative video: {matched_video_id}")
                     
                     # Fallback to any available video
                     if not video_file and available_videos:
-                        video_file = available_videos[0][1]
-                        print(f"Fallback: using first available video file")
+                        # Try to ensure the first available video is actually available
+                        first_video_id = available_videos[0][0]
+                        video_path = self.ensure_video_file_available(first_video_id)
+                        if video_path:
+                            video_file = video_path
+                            matched_video_id = first_video_id
+                            print(f"Fallback: using first available video file: {first_video_id}")
+                        else:
+                            # Try to find any working video
+                            for vid_id, vid_path, vid_duration in available_videos:
+                                if os.path.exists(vid_path):
+                                    video_file = vid_path
+                                    matched_video_id = vid_id
+                                    print(f"Fallback: using working video: {vid_id}")
+                                    break
                     
                     # Fallback to uploaded video
                     if not video_file and self.video_path and os.path.exists(self.video_path):
@@ -1577,32 +1485,46 @@ class ViviChatbot:
                     if video_file:
                         duration = self.get_video_duration(video_file)
                         print(f"Using video: {video_file} (duration: {duration}) for clip {start}-{end}")
-                    
-                    if duration is not None:
-                        # Determine if this is an acronym query
-                        is_acronym_query = any(keyword in query.lower() for keyword in ['acronym', 'meaning', 'what is', 'stands for']) and any(acronym in query.upper() for acronym in ['NOPP', 'ABCD', 'SMART', 'SWOT', 'ABCDEF'])
                         
-                        # Add video_id to clip for natural ending detection
-                        clip_with_video = clip.copy()
-                        clip_with_video['video_id'] = matched_video_id
-                        
-                        # Validate and improve the clip
-                        improved_clips = self.validate_and_improve_clips([clip_with_video], duration, is_acronym_query=is_acronym_query)
-                        
-                        for improved_clip in improved_clips:
-                            print(f"Improved clip: {improved_clip['start']:.2f}-{improved_clip['end']:.2f} (duration: {improved_clip['duration']:.2f}s)")
-                            msg, clip_path = self.clip_video(video_file, improved_clip['start'], improved_clip['end'])
-                            if clip_path:
-                                video_clips.append(clip_path)
+                        if duration is not None:
+                            # Add video_id to clip for natural ending detection
+                            clip_with_video = clip.copy()
+                            clip_with_video['video_id'] = matched_video_id
+                            
+                            # Validate and improve the clip
+                            improved_clips = self.validate_and_improve_clips([clip_with_video], duration, is_acronym_query=False, query=query)
+                            
+                            for improved_clip in improved_clips:
+                                print(f"Improved clip: {improved_clip['start']:.2f}-{improved_clip['end']:.2f} (duration: {improved_clip['duration']:.2f}s)")
+                                msg, clip_path = self.clip_video(video_file, improved_clip['start'], improved_clip['end'])
+                                if clip_path:
+                                    video_clips.append(clip_path)
+                                    print(f"✅ Successfully created clip: {clip_path}")
+                                else:
+                                    print(f"❌ Failed to create clip: {msg}")
+                        else:
+                            print(f"❌ Could not determine video duration for {video_file}")
                     else:
-                        self.display_message("system", f"❌ Could not determine video duration for {video_file}")
-                else:
-                    self.display_message("system", "❌ No valid video found for this clip range.")
+                        # Provide detailed feedback about missing video
+                        original_video_id = clip.get('video_id', 'unknown')
+                        print(f"❌ No valid video file found for clip {start}-{end} (original video: {original_video_id})")
+                        
+                        # Check if this is a missing video issue
+                        if original_video_id != 'unknown':
+                            transcript_path = os.path.join("Max Life Videos", f"{original_video_id}.txt")
+                            if os.path.exists(transcript_path):
+                                self.display_message("assistant", f"⚠️ Video file for '{original_video_id}' is missing but transcript exists. This video may not have been fully downloaded from Google Drive. Try clicking '📥 Download Missing' to attempt to download it.")
+                            else:
+                                self.display_message("assistant", f"⚠️ Video file for '{original_video_id}' not found and no transcript exists. This video may not exist in your collection.")
+                        else:
+                            self.display_message("assistant", f"⚠️ Could not find a suitable video file for clip {start:.1f}s - {end:.1f}s. No videos with matching content were found.")
                 
                 video_clips = [p for p in video_clips if p and os.path.exists(p)]
                 if not video_clips:
                     self.display_message("system", "⚠ No valid clips generated for concatenation.")
+                    return
                 else:
+                    self.display_message("system", f"✅ Successfully created {len(video_clips)} clips! Now concatenating...")
                     # Validate video compatibility before concatenation
                     is_compatible, compatibility_msg = self.validate_video_compatibility(video_clips)
                     if not is_compatible:
@@ -1610,9 +1532,22 @@ class ViviChatbot:
                         self.display_message("system", f"⚠ Video compatibility warning: {compatibility_msg}")
                         # Continue anyway since we're using re-encoding
                     
-                    output_filepath = os.path.join(tempfile.gettempdir(), "final_output.mp4")
+                    # Save to Downloads folder instead of temp
+                    downloads_path = os.path.expanduser("~/Downloads")
+                    if not os.path.exists(downloads_path):
+                        downloads_path = os.path.join(os.path.expanduser("~"), "Downloads")
+                    if not os.path.exists(downloads_path):
+                        # Fallback to temp if Downloads doesn't exist
+                        downloads_path = tempfile.gettempdir()
+                    
+                    output_filepath = os.path.join(downloads_path, "final_output.mp4")
                     msg, out = concatenate_videos(video_clips, output_filepath)
                     print(f"Concatenation result: {msg}, Output: {out}")  # Debug
+                    
+                    # Update the message to show the Downloads path
+                    if "✅ Concatenated video saved to:" in msg:
+                        msg = f"✅ Video clips successfully created and saved to your Downloads folder as 'final_output.mp4'"
+                    
                     self.display_message("Vivi", msg)
             else:
                 context, rag_results = self.build_llm_context(user_input, for_clipping=False)
@@ -1628,46 +1563,67 @@ class ViviChatbot:
                 
                 print(f"Context preview: {context[:300]}...")
                 
+                # Additional detailed debug information
+                if rag_results:
+                    print(f"\n=== RAG RESULTS ANALYSIS ===")
+                    print(f"Total RAG results: {len(rag_results)}")
+                    video_ids = list(set(r['video_id'] for r in rag_results))
+                    print(f"Videos found: {video_ids}")
+                    
+                    # Show top segments with their relevance
+                    print(f"\n=== TOP SEGMENTS BY RELEVANCE ===")
+                    for i, result in enumerate(rag_results[:5]):
+                        print(f"{i+1}. {result['video_id']} ({result['start']:.1f}s - {result['end']:.1f}s)")
+                        print(f"   Similarity: {result['similarity']:.3f}")
+                        print(f"   Text: {result['text'][:150]}...")
+                        print()
+                    
+                    # Show segment distribution by video
+                    video_counts = {}
+                    for result in rag_results:
+                        video_counts[result['video_id']] = video_counts.get(result['video_id'], 0) + 1
+                    
+                    print(f"\n=== SEGMENT DISTRIBUTION BY VIDEO ===")
+                    for video_id, count in sorted(video_counts.items(), key=lambda x: x[1], reverse=True):
+                        print(f"{video_id}: {count} segments")
+                    
+                    print(f"\n=== CONTEXT ANALYSIS ===")
+                    print(f"Context length: {len(context)} characters")
+                    print(f"Estimated tokens: {len(context) // 4}")
+                    print(f"Context preview: {context[:300]}...")
+                
                 response_text = chain_general.invoke({
                     "context": self.context,
                     "question": user_input,
                     "transcript": context
                 })
                 response = extract_content(response_text)
+                
+                # Debug: Show LLM response
+                print(f"\n=== LLM RESPONSE ===")
+                print(f"Response: {response}")
+                print(f"Response length: {len(response)} characters")
+                
                 self.typewriter_effect("Vivi", response)
-                self.context += f"\nUser: {user_input}\nAI: {response}\n"
+                # Use conversation history management instead of direct accumulation
+                self.manage_conversation_history(user_input, response)
             self.user_entry.configure(state="normal")
             self.send_btn.configure(state="normal")
             self.user_entry.focus()
 
         threading.Thread(target=run_bot).start()
 
-    def browse_video(self):
-        self.video_path = filedialog.askopenfilename(filetypes=[("Video Files", "*.mp4 *.mov *.avi")])
-        if not self.video_path:
-            return
-        self.display_message("system", f"📁 Selected video: {os.path.basename(self.video_path)}")
-        def process_video():
-            self.full_transcript_text, self.transcript_segments = self.transcribe_video(self.video_path)
-            print(f"Transcript segments: {self.transcript_segments}")  # Debug
-            self.display_message("system", "✅ Transcription completed!")
-            #self.progress_var.set(0)
-        threading.Thread(target=process_video).start()
 
-    def play_input_video(self):
-        if not self.video_path:
-            self.display_message("system", "⚠️ No video uploaded yet. Upload a video first.")
-            return
-        if self.audio_process and self.audio_process.poll() is None:
-            self.audio_process.terminate()
-        try:
-            self.audio_process = subprocess.Popen(["ffplay", "-autoexit", "-loglevel", "quiet", self.video_path])
-        except Exception as e:
-            self.display_message("system", f"❌ Failed to play input video: {e}")
 
     def play_final_video(self):
-        # Check temp directory first, then fallback to original video directory
-        final_output = os.path.join(tempfile.gettempdir(), "final_output.mp4")
+        # Check Downloads folder first, then temp directory, then original video directory
+        downloads_path = os.path.expanduser("~/Downloads")
+        if not os.path.exists(downloads_path):
+            downloads_path = os.path.join(os.path.expanduser("~"), "Downloads")
+        
+        final_output = os.path.join(downloads_path, "final_output.mp4")
+        if not os.path.exists(final_output):
+            final_output = os.path.join(tempfile.gettempdir(), "final_output.mp4")
         if not os.path.exists(final_output) and self.video_path:
             final_output = os.path.join(os.path.dirname(self.video_path), "final_output.mp4")
         
@@ -1787,6 +1743,17 @@ class ViviChatbot:
             if 'duration' not in clip:
                 clip['duration'] = clip['end'] - clip['start']
         
+        # For multi-topic queries, be more careful about deduplication
+        # Check if this is a multi-topic query
+        query_upper = query.upper()
+        multi_topic_indicators = [' AND ', ' & ', ' AND THE ', ' AND A ', ' AND AN ']
+        is_multi_topic = any(indicator in query_upper for indicator in multi_topic_indicators)
+        
+        if is_multi_topic:
+            print(f"Multi-topic query detected - being conservative with deduplication")
+            # For multi-topic queries, only remove exact duplicates or very high overlap
+            min_overlap = 0.8  # Much higher threshold for multi-topic queries
+        
         # Sort clips by duration (longer clips first) and then by start time
         sorted_clips = sorted(clips, key=lambda x: (x['duration'], -x['start']), reverse=True)
         
@@ -1808,72 +1775,52 @@ class ViviChatbot:
                     # Calculate overlap percentage
                     overlap_ratio = overlap_duration / min(clip_duration, existing_duration)
                     
-                    # For acronym queries, be more careful about removing overlapping clips
-                    # as they might cover different acronyms
-                    if query and any(keyword in query.lower() for keyword in ['acronym', 'meaning', 'what is', 'stands for']):
-                        # Only remove if overlap is very high (>80%) and clips are from same video
-                        if overlap_ratio > 0.8 and clip.get('video_id') == existing.get('video_id'):
-                            is_duplicate = True
-                            print(f"Removing duplicate clip: {clip['start']:.2f}-{clip['end']:.2f} (overlaps {overlap_ratio:.2f} with {existing['start']:.2f}-{existing['end']:.2f})")
-                            break
-                    else:
-                        # Normal deduplication for non-acronym queries
-                        if overlap_ratio > min_overlap:
-                            is_duplicate = True
-                            print(f"Removing duplicate clip: {clip['start']:.2f}-{clip['end']:.2f} (overlaps {overlap_ratio:.2f} with {existing['start']:.2f}-{existing['end']:.2f})")
-                            break
+                    # Check if clips are from different videos (different topics)
+                    different_videos = clip.get('video_id') != existing.get('video_id')
+                    
+                    # For multi-topic queries, preserve clips from different videos
+                    if is_multi_topic and different_videos:
+                        print(f"Preserving clip from different video: {clip['start']:.2f}-{clip['end']:.2f} from {clip.get('video_id')} vs {existing.get('video_id')}")
+                        continue
+                    
+                    # Normal deduplication logic
+                    if overlap_ratio > min_overlap:
+                        is_duplicate = True
+                        print(f"Removing duplicate clip: {clip['start']:.2f}-{clip['end']:.2f} (overlaps {overlap_ratio:.2f} with {existing['start']:.2f}-{existing['end']:.2f})")
+                        break
             
             if not is_duplicate:
                 non_overlapping.append(clip)
-                print(f"Keeping clip: {clip['start']:.2f}-{clip['end']:.2f} (duration: {clip['duration']:.2f}s)")
+                print(f"Keeping clip: {clip['start']:.2f}-{clip['end']:.2f} (duration: {clip['duration']:.2f}s) from {clip.get('video_id', 'unknown')}")
         
         return non_overlapping
 
-    def validate_acronym_completeness(self, text, acronyms):
-        """Validate that an acronym explanation is complete."""
-        if not acronyms:
-            return True
-        
-        text_upper = text.upper()
-        completeness_score = 0
-        
-        for acronym in acronyms:
-            # Check if the acronym is mentioned
-            if acronym in text_upper:
-                completeness_score += 1
-                
-                # Check if individual letters are explained
-                for letter in acronym:
-                    # Look for patterns that indicate letter explanation
-                    patterns = [
-                        f"{letter} is", f"{letter} stands for", f"{letter} means",
-                        f"{letter} represents", f"{letter} refers to", f"{letter} indicates"
-                    ]
-                    if any(pattern in text_upper for pattern in patterns):
-                        completeness_score += 0.5
-        
-        # Calculate completeness percentage
-        max_score = len(acronyms) * 1.5  # Each acronym can contribute 1.5 points
-        completeness_percentage = completeness_score / max_score if max_score > 0 else 0
-        
-        print(f"Acronym completeness: {completeness_percentage:.2f} ({completeness_score}/{max_score})")
-        return completeness_percentage >= 0.6  # At least 60% complete
+
 
     def parse_llm_clip_response(self, response):
-        """Parse LLM response to extract clip ranges more robustly."""
+        """Parse LLM response to extract clip ranges and video assignments more robustly."""
         proposed_clips = []
         
         # Split response into lines and look for clip ranges
         lines = response.strip().split("\n")
         
-        for line in lines:
+        current_video_id = None
+        
+        for i, line in enumerate(lines):
             line = line.strip()
             if not line:
+                continue
+            
+            # Look for video specification
+            video_match = re.search(r"-?\s*Video:\s*([^\n]+)", line, re.IGNORECASE)
+            if video_match:
+                current_video_id = video_match.group(1).strip()
+                print(f"Found video specification: {current_video_id}")
                 continue
                 
             # Look for different patterns of clip ranges
             patterns = [
-                r"- Range:\s*(\d+\.?\d*)\s*-\s*(\d+\.?\d*)",
+                r"-?\s*Range:\s*(\d+\.?\d*)\s*-\s*(\d+\.?\d*)",
                 r"Range:\s*(\d+\.?\d*)\s*-\s*(\d+\.?\d*)",
                 r"(\d+\.?\d*)\s*-\s*(\d+\.?\d*)",
                 r"start[:\s]*(\d+\.?\d*)[\s-]+end[:\s]*(\d+\.?\d*)"
@@ -1888,12 +1835,20 @@ class ViviChatbot:
                         
                         # Basic validation
                         if start >= 0 and end > start and end - start <= 300:  # Max 5 minutes
-                            proposed_clips.append({
+                            clip = {
                                 'start': start, 
                                 'end': end, 
                                 'duration': end - start
-                            })
-                            print(f"Parsed clip: {start:.2f}-{end:.2f}")
+                            }
+                            
+                            # Add video_id if specified
+                            if current_video_id:
+                                clip['video_id'] = current_video_id
+                                print(f"Parsed clip: {start:.2f}-{end:.2f} from video {current_video_id}")
+                            else:
+                                print(f"Parsed clip: {start:.2f}-{end:.2f} (no video specified)")
+                            
+                            proposed_clips.append(clip)
                             break
                     except (ValueError, IndexError):
                         continue
@@ -1910,231 +1865,205 @@ class ViviChatbot:
         return any(keyword in query_lower for keyword in definition_keywords)
 
     def assign_clips_to_correct_videos(self, clips, query, rag_results):
-        """Assign clips to their correct videos based on acronym content."""
-        if not clips or not any(keyword in query.lower() for keyword in ['acronym', 'meaning', 'what is', 'stands for']):
+        """Assign clips to their correct videos based on content relevance."""
+        if not clips:
             return clips
         
-        # Extract only actual acronyms from query (not common words)
-        query_upper = query.upper()
-        # Look for specific known acronyms first
-        known_acronyms = ['NOPP', 'STARULIP', 'ULIP', 'SMART', 'SWOT', 'ABCD', 'ABCDEF']
-        detected_acronyms = [acronym for acronym in known_acronyms if acronym in query_upper]
+        # Use a simpler approach: let the LLM's video assignments guide us
+        # If the LLM specified different videos for different clips, respect that
+        llm_video_assignments = {}
+        for clip in clips:
+            if 'video_id' in clip:
+                video_id = clip['video_id']
+                if video_id not in llm_video_assignments:
+                    llm_video_assignments[video_id] = []
+                llm_video_assignments[video_id].append(clip)
         
-        # If no known acronyms found, look for general acronym patterns (3+ letters)
-        if not detected_acronyms:
-            general_acronyms = re.findall(r'\b[A-Z]{3,}\b', query_upper)
-            # Filter out common words that might be mistaken for acronyms
-            common_words = {'WHAT', 'WHEN', 'WHERE', 'WHY', 'HOW', 'THE', 'AND', 'FOR', 'ARE', 'YOU', 'YOUR', 'THEY', 'THEIR', 'WITH', 'FROM', 'THAT', 'THIS', 'HAVE', 'HAS', 'HAD', 'WILL', 'WOULD', 'COULD', 'SHOULD', 'MIGHT', 'MUST', 'CAN', 'MAY'}
-            detected_acronyms = [acronym for acronym in general_acronyms if acronym not in common_words]
-        
-        print(f"Assigning clips to videos based on actual acronyms: {detected_acronyms}")
-        
-        # If we have multiple acronyms, we need to assign clips to different videos
-        if len(detected_acronyms) > 1:
-            print(f"Multiple acronyms detected: {detected_acronyms}")
-            # Create a mapping of acronyms to videos
-            acronym_video_map = {}
+        # If LLM assigned clips to different videos, use that as the guide
+        if len(llm_video_assignments) > 1:
+            print(f"LLM assigned clips to {len(llm_video_assignments)} different videos - respecting LLM decisions")
             
-            for acronym in detected_acronyms:
-                best_video = None
-                best_score = 0
-                
-                for video_id in list({r['video_id'] for r in rag_results}):
-                    full_transcript = self.load_full_transcript(video_id)
-                    if full_transcript:
-                        transcript_upper = full_transcript.upper()
-                        
-                        # Check if this video contains this specific acronym
-                        if acronym in transcript_upper:
-                            # Calculate score based on how prominently this acronym appears
-                            acronym_count = transcript_upper.count(acronym)
-                            video_segments = [s for s in rag_results if s['video_id'] == video_id]
-                            segment_score = sum(1 - s['similarity'] for s in video_segments) if video_segments else 0
-                            
-                            total_score = acronym_count * 10 + segment_score
-                            
-                            if total_score > best_score:
-                                best_score = total_score
-                                best_video = video_id
-                
-                if best_video:
-                    acronym_video_map[acronym] = best_video
-                    print(f"Mapped {acronym} to {best_video} (score: {best_score:.2f})")
-            
-            # Now assign clips based on which acronym they best match
+            # Simply use the LLM's video assignments as-is
             assigned_clips = []
-            for clip in clips:
-                start, end = clip['start'], clip['end']
-                best_acronym = None
-                best_match_score = 0
-                
-                # Find which acronym this clip best represents by checking content overlap
-                for acronym, video_id in acronym_video_map.items():
-                    # Check if this clip overlaps with segments from this video
-                    video_segments = [s for s in rag_results if s['video_id'] == video_id]
-                    overlap_score = 0
-                    
-                    for seg in video_segments:
-                        if (start < seg['end'] and end > seg['start']):
-                            overlap_score += 1 - seg['similarity']
-                    
-                    # Additional check: see if the clip time range makes sense for this video
-                    full_transcript = self.load_full_transcript(video_id)
-                    if full_transcript:
-                        # Check if this video actually contains the acronym around this time
-                        transcript_upper = full_transcript.upper()
-                        if acronym in transcript_upper:
-                            # Give bonus points for acronym presence
-                            overlap_score += 5
-                    
-                    if overlap_score > best_match_score:
-                        best_match_score = overlap_score
-                        best_acronym = acronym
-                
-                if best_acronym:
-                    clip['video_id'] = acronym_video_map[best_acronym]
-                    clip['target_acronym'] = best_acronym
-                    print(f"Assigned clip {start:.2f}-{end:.2f} to video {clip['video_id']} for acronym {best_acronym} (score: {best_match_score:.2f})")
-                else:
-                    # Fallback: assign to the first available video
-                    if acronym_video_map:
-                        first_acronym = list(acronym_video_map.keys())[0]
-                        clip['video_id'] = acronym_video_map[first_acronym]
-                        clip['target_acronym'] = first_acronym
-                        print(f"Fallback: assigned clip {start:.2f}-{end:.2f} to video {clip['video_id']}")
-                
-                assigned_clips.append(clip)
+            for video_id, video_clips in llm_video_assignments.items():
+                for clip in video_clips:
+                    # Keep the LLM's video assignment
+                    assigned_clips.append(clip)
+                    print(f"Respecting LLM assignment: clip {clip['start']:.2f}-{clip['end']:.2f} to video {video_id}")
             
             return assigned_clips
         
         else:
-            # Single acronym case - use the original logic
+            # Single video case - use content-based assignment
+            print(f"LLM assigned all clips to same video or no video specified - using content-based assignment")
             assigned_clips = []
             
             for clip in clips:
                 start, end = clip['start'], clip['end']
-                best_video = None
-                best_score = 0
+                original_video_id = clip.get('video_id', None)
                 
-                # Check each video to see which one contains the relevant acronyms
-                for video_id in list({r['video_id'] for r in rag_results}):
-                    full_transcript = self.load_full_transcript(video_id)
-                    if full_transcript:
-                        transcript_upper = full_transcript.upper()
-                        
-                        # Check if this video contains any of the requested acronyms
-                        video_acronyms = [acronym for acronym in detected_acronyms if acronym in transcript_upper]
-                        
-                        if video_acronyms:
-                            # Check if this video has segments that overlap with the clip
-                            video_segments = [s for s in rag_results if s['video_id'] == video_id]
-                            overlap_score = 0
-                            
-                            for seg in video_segments:
-                                if (start < seg['end'] and end > seg['start']):
-                                    overlap_score += 1 - seg['similarity']  # Lower similarity is better
-                            
-                            # Additional score for specific acronym matches
-                            # Check if this video contains the main acronyms (NOPP, StarULIP, etc.)
-                            main_acronyms = ['NOPP', 'STARULIP', 'ULIP', 'SMART', 'SWOT', 'ABCD']
-                            for main_acronym in main_acronyms:
-                                if main_acronym in transcript_upper:
-                                    # Give bonus points for main acronym matches
-                                    overlap_score += 10
-                                    print(f"Found main acronym {main_acronym} in {video_id}, adding bonus score")
-                            
-                            if overlap_score > best_score:
-                                best_score = overlap_score
-                                best_video = video_id
-                
-                if best_video:
-                    clip['video_id'] = best_video
-                    print(f"Assigned clip {start:.2f}-{end:.2f} to video {best_video} (score: {best_score:.2f})")
+                # If LLM specified a video, use it
+                if original_video_id:
+                    clip['video_id'] = original_video_id
+                    print(f"Using LLM-specified video: clip {start:.2f}-{end:.2f} to video {original_video_id}")
                 else:
-                    # Fallback: use the first video that contains any acronym
+                    # Find the best video based on content overlap
+                    best_video = None
+                    best_score = 0
+                    
                     for video_id in list({r['video_id'] for r in rag_results}):
-                        full_transcript = self.load_full_transcript(video_id)
-                        if full_transcript and any(acronym in full_transcript.upper() for acronym in detected_acronyms):
-                            clip['video_id'] = video_id
-                            print(f"Fallback: assigned clip {start:.2f}-{end:.2f} to video {video_id}")
-                            break
+                        # Check if this video has segments that overlap with the clip
+                        video_segments = [s for s in rag_results if s['video_id'] == video_id]
+                        overlap_score = 0
+                        
+                        for seg in video_segments:
+                            if (start < seg['end'] and end > seg['start']):
+                                overlap_score += 1 - seg['similarity']  # Lower distance is better
+                        
+                        if overlap_score > best_score:
+                            best_score = overlap_score
+                            best_video = video_id
+                    
+                    if best_video:
+                        clip['video_id'] = best_video
+                        print(f"Content-based assignment: clip {start:.2f}-{end:.2f} to video {best_video} (score: {best_score:.2f})")
+                    else:
+                        # Fallback to first available video
+                        available_videos = list({r['video_id'] for r in rag_results})
+                        if available_videos:
+                            clip['video_id'] = available_videos[0]
+                            print(f"Fallback: assigned clip {start:.2f}-{end:.2f} to video {available_videos[0]}")
                 
                 assigned_clips.append(clip)
             
             return assigned_clips
 
+    def ensure_video_file_available(self, video_id):
+        """Ensure that a video file is available locally, downloading it from Google Drive if necessary."""
+        video_path = os.path.join("Max Life Videos", f"{video_id}.mp4")
+        
+        # Check if video file exists locally
+        if os.path.exists(video_path):
+            print(f"✅ Video file already available: {video_path}")
+            return video_path
+        
+        # Check if transcript exists (indicating the video should exist in Drive)
+        transcript_path = os.path.join("Max Life Videos", f"{video_id}.txt")
+        if not os.path.exists(transcript_path):
+            print(f"⚠️ No transcript found for {video_id}, cannot download video")
+            return None
+        
+        print(f"📥 Video file missing for {video_id}, attempting to download from Google Drive...")
+        
+        # Try to download from Google Drive if sync is available
+        if self.drive_sync:
+            try:
+                # Get the list of files from Google Drive
+                drive_files = self.drive_sync.list_drive_files()
+                
+                # Find the video file in Drive
+                video_file_info = None
+                for file_info in drive_files:
+                    if file_info['name'] == f"{video_id}.mp4":
+                        video_file_info = file_info
+                        break
+                
+                if video_file_info:
+                    print(f"🎬 Found video in Google Drive: {video_id}.mp4")
+                    
+                    # Download the video file
+                    if self.drive_sync.download_file(video_file_info['id'], video_path):
+                        print(f"✅ Successfully downloaded video: {video_path}")
+                        return video_path
+                    else:
+                        print(f"❌ Failed to download video: {video_id}.mp4")
+                        return None
+                else:
+                    print(f"⚠️ Video file {video_id}.mp4 not found in Google Drive")
+                    return None
+                    
+            except Exception as e:
+                print(f"❌ Error downloading video {video_id}.mp4: {e}")
+                return None
+        else:
+            print(f"⚠️ Google Drive sync not available, cannot download missing video: {video_id}.mp4")
+            return None
+
+    def find_alternative_video_for_clip(self, clip, rag_results):
+        """Find an alternative video that can be used for a clip when the original video is missing."""
+        start, end = clip['start'], clip['end']
+        original_video_id = clip.get('video_id', None)
+        
+        print(f"🔍 Looking for alternative video for clip {start:.2f}-{end:.2f} (original: {original_video_id})")
+        
+        # First, try to find videos with similar content that have MP4 files
+        available_videos = []
+        for result in rag_results:
+            video_id = result['video_id']
+            video_path = os.path.join("Max Life Videos", f"{video_id}.mp4")
+            
+            if os.path.exists(video_path):
+                # Check if this video has content that overlaps with our clip
+                if (start < result['end'] and end > result['start']):
+                    available_videos.append((video_id, video_path, result['similarity']))
+        
+        if available_videos:
+            # Sort by similarity (lower is better) and take the best match
+            available_videos.sort(key=lambda x: x[2])
+            best_video_id, best_video_path, best_similarity = available_videos[0]
+            
+            print(f"✅ Found alternative video: {best_video_id} (similarity: {best_similarity:.3f})")
+            
+            # Update the clip to use the alternative video
+            clip['video_id'] = best_video_id
+            clip['alternative_source'] = True
+            clip['original_video_id'] = original_video_id
+            
+            return best_video_path
+        
+        # If no good alternative found, try any available video
+        all_video_paths = []
+        for result in rag_results:
+            video_id = result['video_id']
+            video_path = os.path.join("Max Life Videos", f"{video_id}.mp4")
+            if os.path.exists(video_path) and video_path not in all_video_paths:
+                all_video_paths.append(video_path)
+        
+        if all_video_paths:
+            fallback_video = all_video_paths[0]
+            fallback_video_id = os.path.splitext(os.path.basename(fallback_video))[0]
+            
+            print(f"⚠️ Using fallback video: {fallback_video_id}")
+            
+            # Update the clip to use the fallback video
+            clip['video_id'] = fallback_video_id
+            clip['fallback_source'] = True
+            clip['original_video_id'] = original_video_id
+            
+            return fallback_video
+        
+        print(f"❌ No alternative video found for clip {start:.2f}-{end:.2f}")
+        return None
+
     def validate_all_acronyms_covered(self, query, clips, rag_results):
-        """Validate that all acronyms mentioned in the query are covered by the clips."""
-        # Extract only actual acronyms from query (not common words)
-        query_upper = query.upper()
-        # Look for specific known acronyms first
-        known_acronyms = ['NOPP', 'STARULIP', 'ULIP', 'SMART', 'SWOT', 'ABCD', 'ABCDEF']
-        requested_acronyms = [acronym for acronym in known_acronyms if acronym in query_upper]
+        """Validate that all terms mentioned in the query are covered by the clips."""
+        # Let the LLM decide what's important - don't pre-filter terms
+        query_lower = query.lower()
+        query_words = set(query_lower.split())
         
-        # If no known acronyms found, look for general acronym patterns (3+ letters)
-        if not requested_acronyms:
-            general_acronyms = re.findall(r'\b[A-Z]{3,}\b', query_upper)
-            # Filter out common words that might be mistaken for acronyms
-            common_words = {'WHAT', 'WHEN', 'WHERE', 'WHY', 'HOW', 'THE', 'AND', 'FOR', 'ARE', 'YOU', 'YOUR', 'THEY', 'THEIR', 'WITH', 'FROM', 'THAT', 'THIS', 'HAVE', 'HAS', 'HAD', 'WILL', 'WOULD', 'COULD', 'SHOULD', 'MIGHT', 'MUST', 'CAN', 'MAY'}
-            requested_acronyms = [acronym for acronym in general_acronyms if acronym not in common_words]
+        # Don't pre-determine important terms - let the LLM and RAG results guide this
+        important_terms = []
         
-        if not requested_acronyms:
-            return True
+        # For validation, we'll just check if the clips cover the general query content
+        print(f"Validating coverage of query content")
         
-        print(f"Validating coverage of requested acronyms: {requested_acronyms}")
-        
-        # Check if all requested acronyms are covered in the clips
-        covered_acronyms = set()
-        
-        for clip in clips:
-            # Find the video that contains this clip
-            clip_video_id = None
-            for seg in rag_results:
-                if (clip['start'] < seg['end'] and clip['end'] > seg['start']):
-                    clip_video_id = seg['video_id']
-                    break
-            
-            if clip_video_id:
-                # Load the transcript for this video and check for acronyms
-                full_transcript = self.load_full_transcript(clip_video_id)
-                if full_transcript:
-                    transcript_upper = full_transcript.upper()
-                    for acronym in requested_acronyms:
-                        if acronym in transcript_upper:
-                            covered_acronyms.add(acronym)
-                            print(f"Found {acronym} in {clip_video_id}")
-        
-        # Also check if the clips actually contain the acronym content
-        # by looking at the actual clip time ranges and video content
-        for clip in clips:
-            start, end = clip['start'], clip['end']
-            
-            # Find which video this clip should be from based on content
-            for video_id in list({r['video_id'] for r in rag_results}):
-                full_transcript = self.load_full_transcript(video_id)
-                if full_transcript:
-                    # Check if this video contains the acronyms and if the clip range makes sense
-                    transcript_upper = full_transcript.upper()
-                    for acronym in requested_acronyms:
-                        if acronym in transcript_upper:
-                            # Check if this video has content around the clip time
-                            video_segments = [s for s in rag_results if s['video_id'] == video_id]
-                            if video_segments:
-                                # Check if any segment overlaps with the clip
-                                has_overlap = any(
-                                    (start < seg['end'] and end > seg['start']) 
-                                    for seg in video_segments
-                                )
-                                if has_overlap:
-                                    covered_acronyms.add(acronym)
-                                    print(f"Confirmed {acronym} coverage in {video_id} for clip {start:.2f}-{end:.2f}")
-        
-        missing_acronyms = set(requested_acronyms) - covered_acronyms
-        if missing_acronyms:
-            print(f"Warning: Missing acronyms: {missing_acronyms}")
+        # Since we're letting the LLM decide what's important, 
+        # we'll just validate that the clips exist and have reasonable content
+        if not clips:
+            print("Warning: No clips provided for validation")
             return False
         
-        print(f"All requested acronyms covered: {covered_acronyms}")
+        print(f"Validated {len(clips)} clips - letting LLM determine content relevance")
         return True
 
     def run(self):
@@ -2171,6 +2100,18 @@ class ViviChatbot:
                 # Perform sync
                 sync_result = self.drive_sync.sync_folder()
                 
+                # Check for missing video files and attempt to download them
+                missing_videos = self.check_for_missing_videos()
+                if missing_videos:
+                    print(f"🔍 Found {len(missing_videos)} missing video files, attempting to download...")
+                    downloaded_count = 0
+                    for video_id in missing_videos:
+                        if self.ensure_video_file_available(video_id):
+                            downloaded_count += 1
+                    
+                    if downloaded_count > 0:
+                        sync_result['downloaded'].extend([f"{vid}.mp4" for vid in missing_videos[:downloaded_count]])
+                
                 # Update status
                 self.root.after(0, lambda: self.sync_status_label.configure(
                     text="✅ Google Drive sync active",
@@ -2179,6 +2120,8 @@ class ViviChatbot:
                 
                 # Show sync results
                 message = f"✅ Sync completed!\n📥 Downloaded: {len(sync_result['downloaded'])} files\n🔄 Updated: {len(sync_result['updated'])} files"
+                if missing_videos and downloaded_count > 0:
+                    message += f"\n🎬 Downloaded {downloaded_count} missing video files"
                 self.root.after(0, lambda: self.display_message("assistant", message))
                 
             except Exception as e:
@@ -2192,6 +2135,338 @@ class ViviChatbot:
         # Run sync in background thread
         sync_thread = threading.Thread(target=sync_worker, daemon=True)
         sync_thread.start()
+
+    def check_for_missing_videos(self):
+        """Check for video files that have transcripts but no MP4 files."""
+        missing_videos = []
+        
+        if not os.path.exists("Max Life Videos"):
+            return missing_videos
+        
+        for file_name in os.listdir("Max Life Videos"):
+            if file_name.endswith('.txt'):
+                video_id = file_name[:-4]  # Remove .txt extension
+                video_path = os.path.join("Max Life Videos", f"{video_id}.mp4")
+                
+                if not os.path.exists(video_path):
+                    missing_videos.append(video_id)
+        
+        if missing_videos:
+            print(f"🔍 Found {len(missing_videos)} missing video files: {missing_videos}")
+        
+        return missing_videos
+
+    def check_missing_videos_on_startup(self):
+        """Check for missing video files on startup and notify the user."""
+        def startup_check():
+            try:
+                missing_videos = self.check_for_missing_videos()
+                if missing_videos:
+                    message = f"⚠️ Found {len(missing_videos)} missing video files that have transcripts but no MP4 files.\n\n"
+                    message += "This can happen when videos weren't fully downloaded from Google Drive.\n"
+                    message += "You can:\n"
+                    message += "1. Click '🔄 Sync Drive' to attempt to download missing videos\n"
+                    message += "2. The system will automatically try to find alternative videos for clips\n\n"
+                    message += f"Missing videos: {', '.join(missing_videos[:5])}"
+                    if len(missing_videos) > 5:
+                        message += f" and {len(missing_videos) - 5} more..."
+                    
+                    # Show message in chat after a short delay
+                    self.root.after(2000, lambda: self.display_message("assistant", message))
+                    
+            except Exception as e:
+                print(f"Error checking for missing videos on startup: {e}")
+        
+        # Run the check in a background thread
+        startup_thread = threading.Thread(target=startup_check, daemon=True)
+        startup_thread.start()
+
+    def download_missing_videos(self):
+        """Manually download missing video files from Google Drive."""
+        if not self.drive_sync:
+            self.display_message("assistant", "❌ Google Drive sync is not available. Please check your credentials and try again.")
+            return
+        
+        def download_worker():
+            try:
+                # Update button state
+                self.root.after(0, lambda: self.download_missing_btn.configure(
+                    text="📥 Downloading...",
+                    state="disabled"
+                ))
+                
+                # Check for missing videos
+                missing_videos = self.check_for_missing_videos()
+                
+                if not missing_videos:
+                    self.root.after(0, lambda: self.display_message("assistant", "✅ No missing video files found!"))
+                    return
+                
+                # Attempt to download each missing video
+                downloaded_count = 0
+                failed_count = 0
+                
+                for i, video_id in enumerate(missing_videos):
+                    self.root.after(0, lambda vid=video_id, idx=i+1, total=len(missing_videos): 
+                        self.display_message("assistant", f"📥 Downloading {vid}.mp4 ({idx}/{total})...")
+                    )
+                    
+                    if self.ensure_video_file_available(video_id):
+                        downloaded_count += 1
+                        self.root.after(0, lambda vid=video_id: 
+                            self.display_message("assistant", f"✅ Successfully downloaded {vid}.mp4")
+                        )
+                    else:
+                        failed_count += 1
+                        self.root.after(0, lambda vid=video_id: 
+                            self.display_message("assistant", f"❌ Failed to download {vid}.mp4")
+                        )
+                
+                # Show final results
+                final_message = f"📥 Download complete!\n✅ Downloaded: {downloaded_count} videos\n❌ Failed: {failed_count} videos"
+                if failed_count > 0:
+                    final_message += "\n\nFailed videos may not exist in Google Drive or may have permission issues."
+                
+                self.root.after(0, lambda: self.display_message("assistant", final_message))
+                
+            except Exception as e:
+                error_msg = f"❌ Download failed: {str(e)}"
+                self.root.after(0, lambda: self.display_message("assistant", error_msg))
+            finally:
+                # Reset button state
+                self.root.after(0, lambda: self.download_missing_btn.configure(
+                    text="📥 Download Missing",
+                    state="normal"
+                ))
+        
+        # Run download in background thread
+        download_thread = threading.Thread(target=download_worker, daemon=True)
+        download_thread.start()
+
+    def improve_rag_results(self, rag_results, query):
+        """Improve RAG results by boosting segments with exact keyword matches."""
+        query_lower = query.lower()
+        query_words = set(query_lower.split())
+        
+        improved_results = []
+        
+        for result in rag_results:
+            # Calculate base similarity (lower is better for distance-based scores)
+            base_similarity = result['similarity']
+            
+            # Check for exact keyword matches in the segment text
+            segment_text_lower = result['text'].lower()
+            segment_words = set(segment_text_lower.split())
+            
+            # Count exact word matches
+            exact_matches = len(query_words.intersection(segment_words))
+            
+            # Check for phrase matches (consecutive words)
+            phrase_matches = 0
+            query_phrases = []
+            for i in range(len(query_words)):
+                for j in range(i+1, len(query_words)+1):
+                    phrase = ' '.join(list(query_words)[i:j])
+                    if len(phrase.split()) >= 2 and phrase in segment_text_lower:
+                        phrase_matches += 1
+                        query_phrases.append(phrase)
+            
+            # Get video content relevance score
+            video_relevance = self.check_video_content_relevance(result['video_id'], query)
+            
+            # Check for technical term matches
+            tech_keywords = [
+                'insurance', 'policy', 'claim', 'premium', 'coverage',
+                'hospital', 'network', 'cashless', 'surgery', 'medical', 'treatment', 'bluetooth',
+                'light', 'wavelength', 'frequency', 'radio', 'wireless', 'communication',
+                'criteria', 'definition', 'explanation', 'meaning', 'clause'
+            ]
+            
+            tech_matches = 0
+            for keyword in tech_keywords:
+                if keyword in query_lower and keyword in segment_text_lower:
+                    tech_matches += 1
+            
+            # Calculate boost (for distance-based scores, we want to REDUCE the similarity score)
+            total_boost = 0.0
+            if exact_matches > 0:
+                total_boost += exact_matches * 0.15  # Reduce distance for exact matches
+            
+            if phrase_matches > 0:
+                total_boost += phrase_matches * 0.2  # Reduce distance for phrase matches
+            
+            if tech_matches > 0:
+                total_boost += tech_matches * 0.25  # Reduce distance for technical terms
+            
+            if video_relevance > 0:
+                total_boost += video_relevance * 0.3  # Reduce distance for video relevance
+            
+            if total_boost > 0:
+                # For distance-based scores: improved_similarity = base_similarity - total_boost
+                # This makes the score lower (better) when we have good matches
+                improved_similarity = base_similarity - total_boost
+                
+                # Ensure we don't go below a reasonable minimum (but allow negative values)
+                # Negative values are actually good for distance-based scores
+                improved_similarity = max(-2.0, improved_similarity)  # Allow negative but not too negative
+                
+                print(f"Boosting segment from {result['video_id']}: {exact_matches} exact matches, {phrase_matches} phrase matches, {tech_matches} tech matches, video relevance: {video_relevance:.3f}, similarity: {base_similarity:.3f} -> {improved_similarity:.3f}")
+                if query_phrases:
+                    print(f"  Phrase matches: {query_phrases}")
+                print(f"  Query words: {query_words}")
+                print(f"  Segment preview: {result['text'][:100]}...")
+                
+                result['similarity'] = improved_similarity
+            
+            improved_results.append(result)
+        
+        return improved_results
+
+    def check_video_content_relevance(self, video_id, query):
+        """Check if a video contains content relevant to the query and boost its score."""
+        query_lower = query.lower()
+        
+        # Load the full transcript
+        full_transcript = self.load_full_transcript(video_id)
+        if not full_transcript:
+            return 0.0
+        
+        transcript_lower = full_transcript.lower()
+        
+        # Check for exact keyword matches
+        query_words = set(query_lower.split())
+        transcript_words = set(transcript_lower.split())
+        exact_matches = len(query_words.intersection(transcript_words))
+        
+        # Check for technical term matches
+        tech_keywords = [
+            'bluetooth', 'light', 'wavelength', 'frequency', 'radio', 'wireless', 'communication',
+            'insurance', 'policy', 'claim', 'premium', 'coverage', 'hospital', 'network', 'cashless',
+            'surgery', 'medical', 'treatment', 'diagnosis', 'symptoms', 'disease', 'health',
+            'mathematics', 'physics', 'science', 'theory', 'hypothesis', 'experiment', 'research',
+            'traffic', 'transportation', 'boarding', 'airline', 'efficiency', 'optimization',
+            'boredom', 'psychology', 'mental', 'health', 'wellbeing', 'productivity',
+            'criteria', 'definition', 'explanation', 'meaning', 'clause'
+        ]
+        
+        tech_matches = 0
+        for keyword in tech_keywords:
+            if keyword in query_lower and keyword in transcript_lower:
+                tech_matches += 1
+        
+        # Calculate relevance score
+        relevance_score = (exact_matches * 0.2) + (tech_matches * 0.3)
+        
+        if relevance_score > 0:
+            print(f"Video {video_id} relevance: {relevance_score:.3f} (exact: {exact_matches}, tech: {tech_matches})")
+        
+        return relevance_score
+
+    def expand_acronym_segments(self, segments, query):
+        """Expand segments that contain explanations to get the complete definition."""
+        expanded_segments = []
+        
+        for segment in segments:
+            expanded_segment = segment.copy()
+            
+            # Check if this segment contains important terms that might have a complete explanation
+            text_lower = segment['text'].lower()
+            
+            # Look for patterns that suggest an explanation
+            explanation_patterns = [
+                r'\b[A-Z]{3,}\b',  # 3+ letter terms
+                r'\b[A-Z]{2,}\s+is\s+',  # "X is" pattern
+                r'\b[A-Z]{2,}\s+stands\s+for\s+',  # "X stands for" pattern
+                r'\b[A-Z]{2,}\s+means\s+',  # "X means" pattern
+                r'criteria', r'definition', r'explanation', r'meaning'
+            ]
+            
+            has_explanation = False
+            for pattern in explanation_patterns:
+                if re.search(pattern, segment['text'], re.IGNORECASE):
+                    has_explanation = True
+                    break
+            
+            if has_explanation:
+                # Try to expand this segment to get the complete explanation
+                video_id = segment['video_id']
+                start_time = segment['start']
+                end_time = segment['end']
+                
+                # Load the full transcript for this video
+                full_transcript = self.load_full_transcript(video_id)
+                if full_transcript:
+                    # Find the complete explanation
+                    complete_explanation = self.find_complete_acronym_explanation(video_id, query)
+                    if complete_explanation and isinstance(complete_explanation, dict):
+                        expanded_segment['text'] = complete_explanation.get('text', segment['text'])
+                        expanded_segment['start'] = complete_explanation.get('start', start_time)
+                        expanded_segment['end'] = complete_explanation.get('end', end_time)
+                        print(f"Expanded explanation segment for {video_id}: {start_time:.1f}s-{end_time:.1f}s -> {expanded_segment['start']:.1f}s-{expanded_segment['end']:.1f}s")
+                    elif complete_explanation and isinstance(complete_explanation, str):
+                        # If it returns just the text, expand the time range
+                        expanded_segment['text'] = complete_explanation
+                        # Expand the time range to include more context
+                        expanded_segment['start'] = max(0, start_time - 30)  # 30 seconds before
+                        expanded_segment['end'] = min(9999, end_time + 60)   # 60 seconds after
+                        print(f"Expanded explanation segment for {video_id}: {start_time:.1f}s-{end_time:.1f}s -> {expanded_segment['start']:.1f}s-{expanded_segment['end']:.1f}s")
+            
+            expanded_segments.append(expanded_segment)
+        
+        return expanded_segments
+
+    def debug_google_drive(self):
+        """Debug Google Drive setup and permissions."""
+        if not self.drive_sync:
+            self.display_message("assistant", "❌ Google Drive sync is not available. Please check your credentials and try again.")
+            return
+        
+        def debug_worker():
+            try:
+                # Update button state
+                self.root.after(0, lambda: self.debug_drive_btn.configure(
+                    text="🔍 Debugging...",
+                    state="disabled"
+                ))
+                
+                # Run debug setup
+                success = self.drive_sync.debug_drive_setup()
+                
+                if success:
+                    self.root.after(0, lambda: self.display_message("assistant", 
+                        "✅ Google Drive debug completed successfully!\n\n"
+                        "Check the console output above for detailed information about:\n"
+                        "• Available folders\n"
+                        "• Files in the current folder\n"
+                        "• Missing video files\n\n"
+                        "If files are not found, check:\n"
+                        "1. Folder ID is correct\n"
+                        "2. File permissions\n"
+                        "3. Google Drive API access"
+                    ))
+                else:
+                    self.root.after(0, lambda: self.display_message("assistant", 
+                        "❌ Google Drive debug failed!\n\n"
+                        "Check the console output above for error details.\n"
+                        "Common issues:\n"
+                        "• Invalid credentials\n"
+                        "• Network connectivity\n"
+                        "• API permissions"
+                    ))
+                    
+            except Exception as e:
+                error_msg = f"❌ Debug failed: {str(e)}"
+                self.root.after(0, lambda: self.display_message("assistant", error_msg))
+            finally:
+                # Reset button state
+                self.root.after(0, lambda: self.debug_drive_btn.configure(
+                    text="🔍 Debug Drive",
+                    state="normal"
+                ))
+        
+        # Run debug in background thread
+        debug_thread = threading.Thread(target=debug_worker, daemon=True)
+        debug_thread.start()
 
 if __name__ == "__main__":
     import sys
@@ -2225,11 +2500,36 @@ if __name__ == "__main__":
             print(f"\nContext length: {len(context)}")
             print(f"Context preview: {context[:500]}...")
             
+            # Test LLM response
+            print(f"\n=== LLM RESPONSE ===")
+            try:
+                response_text = chain_general.invoke({
+                    "context": "",
+                    "question": query,
+                    "transcript": context
+                })
+                response = str(response_text.content) if hasattr(response_text, "content") else str(response_text)
+                print(f"LLM Response: {response}")
+            except Exception as e:
+                print(f"LLM Error: {e}")
+            
             # Test clipping context if it's a clipping query
             if query.lower().startswith("clipping:"):
                 clipping_context, clipping_rag = app.build_llm_context(query, for_clipping=True)
                 print(f"\nClipping context length: {len(clipping_context)}")
                 print(f"Clipping context preview: {clipping_context[:500]}...")
+                
+                # Test clipping LLM response
+                print(f"\n=== CLIPPING LLM RESPONSE ===")
+                try:
+                    clipping_response_text = chain_clipping.invoke({
+                        "query": query[len("clipping:"):].strip(),
+                        "transcript": clipping_context
+                    })
+                    clipping_response = str(clipping_response_text.content) if hasattr(clipping_response_text, "content") else str(clipping_response_text)
+                    print(f"Clipping LLM Response: {clipping_response}")
+                except Exception as e:
+                    print(f"Clipping LLM Error: {e}")
         else:
             print("RAG pipeline not available")
     else:

@@ -1102,91 +1102,27 @@ class ViviChatbot:
             return "", []
 
         # --- 1. Extract important terms and handle multi-part queries ---
-        query_upper = query.upper()
-        query_lower = query.lower()
-        
-        # Check for multi-part queries with "and" or "&"
-        multi_query_indicators = [' AND ', ' & ', ' AND THE ', ' AND A ', ' AND AN ']
-        is_multi_query = any(indicator in query_upper for indicator in multi_query_indicators)
-        
-        # Extract important terms (both capitalized and regular words)
-        capitalized_terms = re.findall(r'\b[A-Z]{3,}\b', query_upper)
-        
-        # Filter out common words
-        common_words = {
-            'WHAT', 'WHEN', 'WHERE', 'WHY', 'HOW', 'THE', 'AND', 'FOR', 'ARE', 'YOU', 'YOUR', 'THEY', 'THEIR', 
-            'WITH', 'FROM', 'THAT', 'THIS', 'HAVE', 'HAS', 'HAD', 'WILL', 'WOULD', 'COULD', 'SHOULD', 'MIGHT', 
-    'MUST', 'CAN', 'MAY', 'GIVE', 'FULL', 'EXPLANATION', 'MEANING', 'DEFINITION', 'TELL', 'ABOUT',
-    'IS', 'IN', 'ON', 'AT', 'TO', 'OF', 'BY', 'AS', 'OR', 'IF', 'DO', 'GO', 'UP', 'SO', 'NO', 'ME', 'MY'
-        }
-        important_terms = [term for term in capitalized_terms if term not in common_words]
-        
-        # Extract key words from the query
-        query_words = set(query_lower.split())
-        
-        # Handle multi-part queries
-        if is_multi_query:
-            # Split on "and" or "&" to create subqueries
-            if ' AND ' in query_upper:
-                parts = query_upper.split(' AND ')
-            elif ' & ' in query_upper:
-                parts = query_upper.split(' & ')
-            else:
-                parts = [query_upper]
-            
-            # Clean up parts and create subqueries
-            subqueries = []
-            for part in parts:
-                part = part.strip()
-                if part:
-                    # Convert back to proper case
-                    part_proper = part.lower().title()
-                    subqueries.append(part_proper)
-            
-            print(f"Multi-query detected: {subqueries}")
-        elif important_terms:
-            # For each important term, create a subquery ("What is <term>?")
-            term_subqueries = [f"What is {term}?" for term in important_terms]
-            
-            # Check if there are other parts of the query that should be separate subqueries
-            if is_multi_query:
-                # Split the query and create subqueries for non-term parts
-                if ' AND ' in query_upper:
-                    parts = query_upper.split(' AND ')
-                elif ' & ' in query_upper:
-                    parts = query_upper.split(' & ')
-                else:
-                    parts = [query_upper]
-                
-                additional_subqueries = []
-                for part in parts:
-                    part = part.strip()
-                    if part:
-                        # Check if this part contains any of our detected terms
-                        contains_term = any(term in part for term in important_terms)
-                        if not contains_term:
-                            # This is a non-term part, add it as a subquery
-                            part_proper = part.lower().title()
-                            additional_subqueries.append(part_proper)
-                
-                # Combine term subqueries with additional subqueries
-                subqueries = term_subqueries + additional_subqueries
-                print(f"Combined subqueries: {subqueries}")
-            else:
-                subqueries = term_subqueries
+        import re
+        # Generalize subquery extraction for all queries
+        split_pattern = re.compile(r'\b(?:and|&)\b', re.IGNORECASE)
+        parts = [p.strip() for p in split_pattern.split(query) if p.strip()]
+        if len(parts) > 1:
+            subqueries = parts
         else:
-            # Use enhanced query preprocessing for better RAG results
-            enhanced_queries = self.preprocess_query_for_rag(query)
-            subqueries = enhanced_queries
-
+            subqueries = [query]
         print(f"Multi-topic RAG: subqueries = {subqueries}")
-
+        
         # --- 2. For each subquery, run a separate RAG search and merge results ---
         all_rag_results = []
+        subquery_rag_results = []  # Track results per subquery
         for subq in subqueries:
-            n_results = 15 if for_clipping else 8  # Reduced to get fewer, more relevant results
+            n_results = 15 if for_clipping else 8
             rag_results = self.rag.query_videos(subq, n_results=n_results)
+            # Tag each result with its subquery for later grouping
+            for r in rag_results:
+                r['__subquery__'] = subq
             all_rag_results.extend(rag_results)
+            subquery_rag_results.append((subq, rag_results))
             print(f"Subquery '{subq}' found {len(rag_results)} results")
         
         # Remove duplicates (by video_id, start, end)
@@ -1197,50 +1133,49 @@ class ViviChatbot:
             if key not in seen:
                 unique_rag_results.append(r)
                 seen.add(key)
-
-        # Use a more permissive similarity threshold to ensure we get relevant results
-        similarity_threshold = 0.75  # Lower is better for distance-based similarity, but we need to be more permissive
+        
+        similarity_threshold = 0.75
         filtered = [r for r in unique_rag_results if r['similarity'] < similarity_threshold]
-        
-        # Improve similarity scoring with exact keyword matches
         filtered = self.improve_rag_results(filtered, query)
+        filtered = sorted(filtered, key=lambda x: x['similarity'])[:6]
         
-        # Sort by similarity (lower distance is better) and take top segments
-        filtered = sorted(filtered, key=lambda x: x['similarity'])[:6]  # Reduced to get fewer results
+        # --- NEW LOGIC: Ensure all subqueries are represented in context (up to 8) ---
+        # First, guarantee that each subquery's best video is included
+        top_video_ids = set()
+        for subq, rag_results in subquery_rag_results:
+            if rag_results:
+                # Always include the video of the top segment for each subquery
+                best_video_id = rag_results[0]['video_id']
+                top_video_ids.add(best_video_id)
+                print(f"Guaranteed inclusion: {best_video_id} (best for subquery '{subq}')")
         
-        # No special handling - let the LLM decide based on full transcripts
+        # Now fill up to 8 with the next best globally
+        all_rag_results_sorted = sorted(filtered, key=lambda x: x['similarity'])
+        for r in all_rag_results_sorted:
+            if len(top_video_ids) >= 8:
+                break
+            top_video_ids.add(r['video_id'])
         
-        video_ids = list({r['video_id'] for r in filtered})
-        print(f"RAG search found {len(unique_rag_results)} unique results, filtered to {len(filtered)} from {len(video_ids)} videos")
-        print(f"Video IDs found: {video_ids}")
-
-        # --- 3. Improved Context Construction ---
-        # Always use the top 8 videos as full transcripts to give LLM complete context
-        # Sort videos by relevance (based on their best segment similarity scores)
-        video_scores = {}
-        for video_id in video_ids:
-            video_segments = [r for r in filtered if r['video_id'] == video_id]
-            if video_segments:
-                # Use the best (lowest) similarity score for this video
-                best_score = min(seg['similarity'] for seg in video_segments)
-                video_scores[video_id] = best_score
-        
-        # Sort videos by their best similarity scores (lower is better)
-        sorted_video_ids = sorted(video_scores.keys(), key=lambda vid: video_scores[vid])
-        
-        # Take the top 8 most relevant videos
-        top_video_ids = sorted_video_ids[:8]
+        top_video_ids = list(top_video_ids)
         print(f"Using full transcripts for top {len(top_video_ids)} videos: {top_video_ids}")
         
         context_lines = []
         total_chars = 0
         max_total_chars = self.max_context_chars if for_clipping else self.max_context_chars // 2
         
+        # First, add the specific RAG segments that were found
+        if filtered:
+            context_lines.append("=== RELEVANT SEGMENTS FOUND ===")
+            for i, result in enumerate(filtered):
+                segment_text = f"[{result['start']:.2f} - {result['end']:.2f}] {result['text']}"
+                context_lines.append(f"Segment {i+1} from {result['video_id']}: {segment_text}")
+            context_lines.append("")  # Empty line for separation
+        
+        # Then add full transcripts for the top videos
         for video_id in top_video_ids:
             full_transcript = self.load_full_transcript(video_id)
             if full_transcript:
-                # Use full transcript with truncation if needed
-                if len(full_transcript) > 3000:  # Reduced from 6000
+                if len(full_transcript) > 3000:
                     full_transcript = full_transcript[:2997] + "..."
                 if total_chars + len(full_transcript) > max_total_chars:
                     break
@@ -1248,7 +1183,6 @@ class ViviChatbot:
                 total_chars += len(full_transcript)
         
         final_context = "\n\n".join(context_lines)
-        # Apply token limit check
         final_context = self.check_token_limit(final_context, max_tokens=8000)
         estimated_tokens = self.estimate_tokens(final_context)
         print(f"Full transcript context: {len(final_context)} chars, ~{estimated_tokens} tokens")

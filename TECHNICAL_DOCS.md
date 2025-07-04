@@ -78,10 +78,10 @@ The main application class that orchestrates all system components.
 
 #### Constructor (`__init__`)
 ```python
-def __init__(self):
-    # Initialize GUI components
-    # Set up Google Drive sync
-    # Initialize RAG pipeline
+    def __init__(self):
+        # Initialize GUI components
+        # Set up Google Drive sync
+        # Initialize RAG pipeline
     # Configure conversation management
 ```
 

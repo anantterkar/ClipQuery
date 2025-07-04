@@ -560,15 +560,12 @@ class GoogleDriveSync:
                     pageToken=page_token,
                     pageSize=1000  # Maximum page size
                 ).execute()
-                
                 files = results.get('files', [])
                 all_files.extend(files)
-                
                 # Check if there are more pages
                 page_token = results.get('nextPageToken')
                 if not page_token:
                     break
-                    
             except Exception as e:
                 print(f"❌ Error listing files: {e}")
                 break

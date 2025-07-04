@@ -169,7 +169,7 @@ Full Transcripts from Videos:
 {transcript}
 
 Return the result in the following format, with each range and explanation on separate lines:
-- Video: [video_id]
+- Video: [video_id] 
   Range: start_time - end_time
   Relevance: [Brief explanation of why this range is relevant to the query]
 
@@ -280,8 +280,6 @@ class ViviChatbot:
         self.sync_btn = ctk.CTkButton(self.btn_frame, text="🔄 Sync Drive", command=self.manual_sync, fg_color="#17a2b8", width=120, height=40, font=("Arial", 14))
         self.sync_btn.pack(side="left", padx=5)
 
-
-
         # Google Drive sync status indicator
         self.sync_status_label = ctk.CTkLabel(self.btn_frame, text="🔄 Initializing Google Drive sync...", font=("Arial", 12), text_color="#666666")
         self.sync_status_label.pack(side="right", padx=10)
@@ -380,6 +378,14 @@ class ViviChatbot:
                 print(f"✅ Google Drive sync initialized successfully")
                 print(f"📥 Downloaded: {len(sync_result['downloaded'])} files")
                 print(f"🔄 Updated: {len(sync_result['updated'])} files")
+                
+                # Show transcription results if any
+                if 'transcribed' in sync_result and sync_result['transcribed']:
+                    print(f"🎵 Transcribed {len(sync_result['transcribed'])} videos: {sync_result['transcribed']}")
+                if 'transcription_skipped' in sync_result and sync_result['transcription_skipped']:
+                    print(f"⏭️ Skipped transcription for {len(sync_result['transcription_skipped'])} videos")
+                if 'transcription_failed' in sync_result and sync_result['transcription_failed']:
+                    print(f"❌ Failed to transcribe {len(sync_result['transcription_failed'])} videos")
                 
                 # Update status label safely
                 try:
@@ -2069,6 +2075,8 @@ class ViviChatbot:
         # Run sync in background thread
         sync_thread = threading.Thread(target=sync_worker, daemon=True)
         sync_thread.start()
+
+
 
     def check_for_missing_videos(self):
         """Check for video files that have transcripts but no MP4 files."""

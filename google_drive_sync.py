@@ -446,10 +446,20 @@ class GoogleDriveSync:
         # Initialize Whisper model for transcription
         try:
             self.whisper_model = whisper.load_model("base")
-            print("✅ Whisper model loaded successfully")
+            print("✅ Whisper base model loaded successfully")
+            
+            # Also try to load a smaller model for faster transcription
+            try:
+                self.whisper_model_small = whisper.load_model("tiny")
+                print("✅ Whisper tiny model loaded for faster transcription")
+            except Exception as e:
+                print(f"⚠️ Could not load Whisper tiny model: {e}")
+                self.whisper_model_small = None
+                
         except Exception as e:
             print(f"⚠️ Warning: Could not load Whisper model: {e}")
             self.whisper_model = None
+            self.whisper_model_small = None
         
         # Authenticate with Google Drive
         try:
@@ -955,12 +965,82 @@ class GoogleDriveSync:
         try:
             print(f"🎵 Transcribing: {os.path.basename(video_path)}")
             
-            # Transcribe the video
-            result = self.whisper_model.transcribe(video_path)
+            # Check file size and estimate time
+            file_size = os.path.getsize(video_path) / (1024 * 1024)  # MB
+            print(f"📊 File size: {file_size:.1f} MB")
+            
+            # Estimate transcription time (rough estimate: 1 minute per 10MB)
+            estimated_minutes = max(1, int(file_size / 10))
+            print(f"⏱️ Estimated transcription time: ~{estimated_minutes} minutes")
+            
+            # Set timeout based on file size (minimum 5 minutes, maximum 30 minutes)
+            timeout_minutes = min(30, max(5, estimated_minutes * 2))
+            print(f"⏰ Timeout set to: {timeout_minutes} minutes")
+            
+            # Transcribe the video with progress indication
+            print("🔄 Starting transcription (this may take several minutes)...")
+            
+            # Use a smaller model for faster transcription if available
+            try:
+                # Try to use a smaller model for faster processing
+                if hasattr(self, 'whisper_model_small') and self.whisper_model_small is not None:
+                    model = self.whisper_model_small
+                    print("🎯 Using small model for faster transcription")
+                else:
+                    model = self.whisper_model
+                    print("🎯 Using base model")
+                
+                # Transcribe with timeout
+                import threading
+                import queue
+                
+                result_queue = queue.Queue()
+                error_queue = queue.Queue()
+                
+                def transcribe_worker():
+                    try:
+                        result = model.transcribe(video_path, verbose=True)
+                        result_queue.put(result)
+                    except Exception as e:
+                        error_queue.put(e)
+                
+                # Start transcription in a separate thread
+                transcribe_thread = threading.Thread(target=transcribe_worker)
+                transcribe_thread.daemon = True
+                transcribe_thread.start()
+                
+                # Wait for completion with timeout
+                transcribe_thread.join(timeout=timeout_minutes * 60)
+                
+                if transcribe_thread.is_alive():
+                    print(f"❌ Transcription timed out after {timeout_minutes} minutes")
+                    return False
+                
+                # Check for errors
+                if not error_queue.empty():
+                    error = error_queue.get()
+                    print(f"❌ Transcription failed: {error}")
+                    return False
+                
+                # Get result
+                if result_queue.empty():
+                    print("❌ No transcription result received")
+                    return False
+                
+                result = result_queue.get()
+                print(f"✅ Transcription completed for: {os.path.basename(video_path)}")
+                
+            except Exception as whisper_error:
+                print(f"❌ Whisper transcription failed: {whisper_error}")
+                # Try with a different approach or fallback
+                print("🔄 Attempting fallback transcription...")
+                result = self.whisper_model.transcribe(video_path, verbose=True)
             
             # Save transcript as text file
             base_name = os.path.splitext(video_path)[0]
             txt_path = f"{base_name}.txt"
+            
+            print(f"💾 Saving transcript to: {os.path.basename(txt_path)}")
             
             with open(txt_path, 'w', encoding='utf-8') as f:
                 for segment in result['segments']:
@@ -970,14 +1050,18 @@ class GoogleDriveSync:
                     f.write(f"[{start_time:.2f} - {end_time:.2f}] {text}\n")
             
             print(f"✅ Transcription saved: {os.path.basename(txt_path)}")
+            print(f"📝 Generated {len(result['segments'])} segments")
             
             # Also generate SRT file
+            print(f"📄 Generating SRT file...")
             self.generate_srt_file(video_path, result)
             
             return True
             
         except Exception as e:
             print(f"❌ Error transcribing {video_path}: {e}")
+            import traceback
+            traceback.print_exc()
             return False
     
     def generate_srt_file(self, video_path: str, result: dict = None) -> bool:
@@ -1170,6 +1254,108 @@ class GoogleDriveSync:
                     print(f"⏳ Waiting {backoff_time} seconds before retry...")
                     time.sleep(backoff_time)
     
+    def check_and_transcribe_existing_videos(self) -> Dict[str, List[str]]:
+        """
+        Check for existing videos in the local folder that don't have transcript files
+        and transcribe them automatically.
+        
+        Returns:
+            Dictionary with 'transcribed', 'skipped', and 'failed' lists
+        """
+        transcribed = []
+        skipped = []
+        failed = []
+        
+        if not os.path.exists(self.local_sync_dir):
+            return {'transcribed': transcribed, 'skipped': skipped, 'failed': failed}
+        
+        print("🎵 Checking for existing videos that need transcription...")
+        
+        video_extensions = {'.mp4', '.avi', '.mov', '.mkv', '.wmv', '.flv', '.webm'}
+        
+        for file_name in os.listdir(self.local_sync_dir):
+            file_ext = Path(file_name).suffix.lower()
+            
+            if file_ext in video_extensions:
+                file_path = os.path.join(self.local_sync_dir, file_name)
+                base_name = os.path.splitext(file_path)[0]
+                txt_path = f"{base_name}.txt"
+                srt_path = f"{base_name}.srt"
+                
+                txt_exists = os.path.exists(txt_path)
+                srt_exists = os.path.exists(srt_path)
+                
+                # Check if transcript files exist in Google Drive as well
+                drive_files = self.list_drive_files()
+                drive_file_names = [f['name'] for f in drive_files]
+                txt_name = os.path.basename(txt_path)
+                srt_name = os.path.basename(srt_path)
+                
+                txt_in_drive = txt_name in drive_file_names
+                srt_in_drive = srt_name in drive_file_names
+                
+                # Only transcribe if no transcript files exist locally or in Drive
+                if not txt_exists and not srt_exists and not txt_in_drive and not srt_in_drive:
+                    print(f"🎵 Transcribing existing video: {file_name}")
+                    
+                    try:
+                        # Transcribe the video
+                        if self.transcribe_video(file_path):
+                            transcribed.append(file_name)
+                            
+                            # Upload transcript to Google Drive
+                            if os.path.exists(txt_path):
+                                txt_name = os.path.basename(txt_path)
+                                self.upload_file(txt_path, txt_name)
+                                print(f"📤 Uploaded transcript: {txt_name}")
+                            
+                            # Generate and upload SRT file
+                            if self.generate_srt_file(file_path, result=None):
+                                srt_path = f"{base_name}.srt"
+                                if os.path.exists(srt_path):
+                                    srt_name = os.path.basename(srt_path)
+                                    self.upload_file(srt_path, srt_name)
+                                    print(f"📤 Uploaded SRT: {srt_name}")
+                        else:
+                            failed.append(file_name)
+                            print(f"❌ Failed to transcribe: {file_name}")
+                    except Exception as e:
+                        failed.append(file_name)
+                        print(f"❌ Error transcribing {file_name}: {e}")
+                else:
+                    skipped.append(file_name)
+                    print(f"⏭️ Skipping {file_name} - transcript files already exist")
+                    if txt_exists:
+                        print(f"   📄 Local transcript: {txt_name}")
+                    if srt_exists:
+                        print(f"   📄 Local SRT: {srt_name}")
+                    if txt_in_drive:
+                        print(f"   ☁️ Drive transcript: {txt_name}")
+                    if srt_in_drive:
+                        print(f"   ☁️ Drive SRT: {srt_name}")
+                    
+                    # Upload existing local files to Drive if they're not there
+                    if txt_exists and not txt_in_drive:
+                        self.upload_file(txt_path, txt_name)
+                        print(f"📤 Uploaded existing transcript: {txt_name}")
+                    
+                    if srt_exists and not srt_in_drive:
+                        self.upload_file(srt_path, srt_name)
+                        print(f"📤 Uploaded existing SRT: {srt_name}")
+        
+        if transcribed:
+            print(f"✅ Transcribed {len(transcribed)} videos: {transcribed}")
+        if skipped:
+            print(f"⏭️ Skipped {len(skipped)} videos (already have transcripts)")
+        if failed:
+            print(f"❌ Failed to transcribe {len(failed)} videos: {failed}")
+        
+        return {
+            'transcribed': transcribed,
+            'skipped': skipped,
+            'failed': failed
+        }
+
     def initial_sync(self):
         """Perform initial sync from Google Drive."""
         print("🔄 Performing initial sync from Google Drive...")
@@ -1196,6 +1382,14 @@ class GoogleDriveSync:
         all_new = sync_result['downloaded'] + sync_result['updated']
         if all_new:
             self.process_new_files(all_new)
+        
+        # Check and transcribe any existing videos that don't have transcripts
+        transcription_result = self.check_and_transcribe_existing_videos()
+        
+        # Add transcription results to sync result
+        sync_result['transcribed'] = transcription_result['transcribed']
+        sync_result['transcription_skipped'] = transcription_result['skipped']
+        sync_result['transcription_failed'] = transcription_result['failed']
         
         return sync_result
 
@@ -1253,7 +1447,26 @@ class GoogleDriveSync:
         if 'missing_videos_not_found' in sync_result and sync_result['missing_videos_not_found']:
             print(f"⚠️ {len(sync_result['missing_videos_not_found'])} video files not found in Google Drive")
         
+        # Report on transcription results
+        if 'transcribed' in sync_result and sync_result['transcribed']:
+            print(f"🎵 Transcribed {len(sync_result['transcribed'])} videos: {sync_result['transcribed']}")
+        if 'transcription_skipped' in sync_result and sync_result['transcription_skipped']:
+            print(f"⏭️ Skipped transcription for {len(sync_result['transcription_skipped'])} videos (already have transcripts)")
+        if 'transcription_failed' in sync_result and sync_result['transcription_failed']:
+            print(f"❌ Failed to transcribe {len(sync_result['transcription_failed'])} videos: {sync_result['transcription_failed']}")
+        
         return sync_result
+
+    def transcribe_existing_videos_only(self) -> Dict[str, List[str]]:
+        """
+        Only transcribe existing videos that don't have transcript files.
+        This is useful when you just want to transcribe videos without doing a full sync.
+        
+        Returns:
+            Dictionary with transcription results
+        """
+        print("🎵 Transcribing existing videos only...")
+        return self.check_and_transcribe_existing_videos()
 
 # Example usage and setup
 def setup_google_drive_sync():

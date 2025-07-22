@@ -106,7 +106,7 @@ def concatenate_videos(video_paths, output_filepath):
         return f"❌ Exception during concatenation: {str(e)}", None
 
 # ------------------ LLM Setup ------------------
-os.environ["GROQ_API_KEY"] = "YOUR API KEY HERE"
+os.environ["GROQ_API_KEY"] = "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"
 
 llm = ChatGroq(model="llama-3.3-70b-versatile", temperature=1)
 llm_clipping = ChatGroq(model="llama-3.3-70b-versatile", temperature=1.2)  # Higher temperature for more creative clipping
@@ -222,7 +222,7 @@ class ViviChatbot:
 
         # Load and display logo with resizing
         try:
-            logo_img = Image.open(r"C:\Users\adibr\Desktop\TSS\vivi_logo_1.PNG")
+            logo_img = Image.open(r"C:\Dev\ClipQuery\vivi_logo_1.PNG")
             logo_img = logo_img.resize((100, 100), Image.Resampling.LANCZOS)
             logo_photo = ImageTk.PhotoImage(logo_img)
             self.logo_label = ctk.CTkLabel(
@@ -291,7 +291,7 @@ class ViviChatbot:
         self.progress_bar.pack_forget()  # Hide initially
 
         # Initial welcome message
-        self.display_message("assistant", "Hello! I'm Vivi, your video assistant. I can help you analyze videos from your Google Drive and create clips. Just ask me questions or use 'clipping:' to create video clips. How can I assist you today?")
+        self.display_message("assistant", "Hello! I'm Vivi, your video assistant. I can help you analyze videos from your Google Drive and create clips. Just ask me questions or use 'clip:' to create video clips. How can I assist you today?")
 
         # Initialize RAG pipeline
         try:
@@ -1165,9 +1165,22 @@ class ViviChatbot:
         top_video_ids = list(top_video_ids)
         print(f"Using full transcripts for top {len(top_video_ids)} videos: {top_video_ids}")
         
+        # Filter out videos that don't have transcripts
+        available_video_ids = []
+        for video_id in top_video_ids:
+            transcript_path = os.path.join("Max Life Videos", f"{video_id}.txt")
+            if os.path.exists(transcript_path):
+                available_video_ids.append(video_id)
+            else:
+                print(f"⚠️ Video {video_id} has no transcript file, skipping")
+        
+        if len(available_video_ids) < len(top_video_ids):
+            print(f"⚠️ {len(top_video_ids) - len(available_video_ids)} videos missing transcripts")
+        
+        top_video_ids = available_video_ids
+        
         context_lines = []
         total_chars = 0
-        max_total_chars = self.max_context_chars if for_clipping else self.max_context_chars // 2
         
         # First, add the specific RAG segments that were found
         if filtered:
@@ -1177,21 +1190,34 @@ class ViviChatbot:
                 context_lines.append(f"Segment {i+1} from {result['video_id']}: {segment_text}")
             context_lines.append("")  # Empty line for separation
         
-        # Then add full transcripts for the top videos
+        # ALWAYS include full transcripts for the top videos (up to 8)
+        # This ensures the LLM has complete context for accurate decisions
+        videos_added = 0
         for video_id in top_video_ids:
             full_transcript = self.load_full_transcript(video_id)
             if full_transcript:
-                if len(full_transcript) > 3000:
-                    full_transcript = full_transcript[:2997] + "..."
-                if total_chars + len(full_transcript) > max_total_chars:
-                    break
+                # For clipping queries, we need the full transcript for accurate timestamp decisions
+                # For normal queries, we also need the full transcript for comprehensive answers
+                # Only truncate if the transcript is extremely long (>5000 chars)
+                if len(full_transcript) > 5000:
+                    full_transcript = full_transcript[:4997] + "..."
+                
                 context_lines.append(f"=== Video: {video_id} ===\n{full_transcript}")
                 total_chars += len(full_transcript)
+                videos_added += 1
+                print(f"Added full transcript for {video_id} ({len(full_transcript)} chars)")
+                
+                # Stop at 8 videos to keep context manageable
+                if videos_added >= 8:
+                    print(f"Reached 8 videos limit, stopping transcript inclusion")
+                    break
         
         final_context = "\n\n".join(context_lines)
-        final_context = self.check_token_limit(final_context, max_tokens=8000)
+        # For full transcript approach, allow larger context for better accuracy
+        final_context = self.check_token_limit(final_context, max_tokens=12000)
         estimated_tokens = self.estimate_tokens(final_context)
         print(f"Full transcript context: {len(final_context)} chars, ~{estimated_tokens} tokens")
+        print(f"Videos included: {videos_added}")
         
         return final_context, filtered
 
@@ -1209,8 +1235,8 @@ class ViviChatbot:
             return str(response.content) if hasattr(response, "content") else str(response)
 
         def run_bot():
-            if user_input.lower().startswith("clipping:"):
-                query = user_input[len("clipping:"):].strip()
+            if user_input.lower().startswith("clip:"):
+                query = user_input[len("clip:"):].strip()
                 context, rag_results = self.build_llm_context(query, for_clipping=True)
                 
                 # Debug: Show what context is being used for clipping
@@ -1238,17 +1264,36 @@ class ViviChatbot:
                 
                 print(f"Proposed clips: {proposed_clips}")
                 
+                # If no clips were parsed, the LLM might have given a text response instead of structured clips
+                # In this case, we need to extract clips from the RAG results based on the LLM's response
+                if not proposed_clips:
+                    print("No clips parsed from LLM response, extracting from RAG results...")
+                    proposed_clips = self.extract_clips_from_rag_results(rag_results, response, query)
+                    print(f"Extracted {len(proposed_clips)} clips from RAG results")
+                
                 # Limit the number of clips to avoid overwhelming responses
-                max_clips = 2  # Limit to 2 clips maximum
+                # For multi-topic queries, allow more clips to cover all topics
+                query_upper = query.upper()
+                multi_topic_indicators = [' AND ', ' & ', ' AND THE ', ' AND A ', ' AND AN ']
+                is_multi_topic = any(indicator in query_upper for indicator in multi_topic_indicators)
+                
+                if is_multi_topic:
+                    max_clips = 5  # Allow up to 5 clips for multi-topic queries
+                    print(f"Multi-topic query detected - allowing up to {max_clips} clips")
+                else:
+                    max_clips = 3  # Limit to 3 clips for single-topic queries
+                
                 if len(proposed_clips) > max_clips:
                     print(f"Too many clips ({len(proposed_clips)}), limiting to {max_clips} most relevant")
-                    # Keep the first 2 clips (usually the most relevant ones)
-                    proposed_clips = proposed_clips[:max_clips]
+                    # Keep the clips with the longest durations (most comprehensive coverage)
+                    proposed_clips = sorted(proposed_clips, key=lambda x: x.get('duration', 0), reverse=True)[:max_clips]
                 
                 # Deduplicate overlapping clips
                 if len(proposed_clips) > 1:
                     print("Deduplicating overlapping clips...")
-                    proposed_clips = self.deduplicate_clips(proposed_clips, min_overlap=0.3, query=query)
+                    # Use more conservative deduplication for multi-topic queries
+                    min_overlap_threshold = 0.5 if is_multi_topic else 0.3
+                    proposed_clips = self.deduplicate_clips(proposed_clips, min_overlap=min_overlap_threshold, query=query)
                     print(f"After deduplication: {len(proposed_clips)} clips")
                 
                 # Assign clips to their correct videos based on content relevance
@@ -1692,7 +1737,7 @@ class ViviChatbot:
         if is_multi_topic:
             print(f"Multi-topic query detected - being conservative with deduplication")
             # For multi-topic queries, only remove exact duplicates or very high overlap
-            min_overlap = 0.8  # Much higher threshold for multi-topic queries
+            min_overlap = max(min_overlap, 0.8)  # Use the higher of the two thresholds
         
         # Sort clips by duration (longer clips first) and then by start time
         sorted_clips = sorted(clips, key=lambda x: (x['duration'], -x['start']), reverse=True)
@@ -1794,6 +1839,62 @@ class ViviChatbot:
                         continue
         
         return proposed_clips
+
+    def extract_clips_from_rag_results(self, rag_results, llm_response, query):
+        """Extract clips from RAG results when LLM doesn't provide structured clips."""
+        clips = []
+        
+        if not rag_results:
+            return clips
+        
+        # For multi-topic queries, try to cover different topics
+        query_upper = query.upper()
+        multi_topic_indicators = [' AND ', ' & ', ' AND THE ', ' AND A ', ' AND AN ']
+        is_multi_topic = any(indicator in query_upper for indicator in multi_topic_indicators)
+        
+        # Group segments by video
+        video_segments = {}
+        for seg in rag_results:
+            video_id = seg['video_id']
+            if video_id not in video_segments:
+                video_segments[video_id] = []
+            video_segments[video_id].append(seg)
+        
+        # For multi-topic queries, select the best segment from each video
+        # For single-topic queries, select the best segments overall
+        if is_multi_topic:
+            # Select up to 2 segments from different videos for multi-topic queries
+            selected_videos = list(video_segments.keys())[:2]
+            for video_id in selected_videos:
+                segments = video_segments[video_id]
+                if segments:
+                    # Select the segment with the highest similarity score
+                    best_segment = max(segments, key=lambda x: x.get('similarity', 0))
+                    clip = {
+                        'start': best_segment['start'],
+                        'end': best_segment['end'],
+                        'duration': best_segment['end'] - best_segment['start'],
+                        'video_id': video_id
+                    }
+                    clips.append(clip)
+        else:
+            # For single-topic queries, select the best segments overall
+            all_segments = []
+            for segments in video_segments.values():
+                all_segments.extend(segments)
+            
+            # Sort by similarity and select the best ones
+            sorted_segments = sorted(all_segments, key=lambda x: x.get('similarity', 0), reverse=True)
+            for seg in sorted_segments[:3]:  # Take top 3 segments
+                clip = {
+                    'start': seg['start'],
+                    'end': seg['end'],
+                    'duration': seg['end'] - seg['start'],
+                    'video_id': seg['video_id']
+                }
+                clips.append(clip)
+        
+        return clips
 
     def is_definition_query(self, query):
         """Detect if a query is asking for a definition or explanation."""

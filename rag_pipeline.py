@@ -119,89 +119,100 @@ class VectorStore:
         
     def search_segments(self, query: str, n_results: int = 5) -> List[Dict[str, Any]]:
         """Search for relevant video segments"""
-        # Check if this is an acronym query
+        # Improved acronym detection: only all-uppercase, 3+ chars, not common/insurance words
         query_upper = query.upper()
-        # Look for acronym patterns (3+ capital letters)
+        # Extract all-uppercase words of length 3+ (including those with punctuation)
         acronym_pattern = re.findall(r'\b[A-Z]{3,}\b', query_upper)
+        # Exclude common words and insurance terms
+        common_words = {
+            'WHAT', 'WHEN', 'WHERE', 'WHY', 'HOW', 'THE', 'AND', 'FOR', 'ARE', 'YOU', 'YOUR', 'THEY', 'THEIR',
+            'WITH', 'FROM', 'THAT', 'THIS', 'HAVE', 'HAS', 'HAD', 'WILL', 'WOULD', 'COULD', 'SHOULD', 'MIGHT',
+            'MUST', 'CAN', 'MAY', 'GIVE', 'FULL', 'EXPLANATION', 'MEANING', 'DEFINITION', 'STANDS', 'ABOUT',
+            # Insurance/finance terms to exclude as acronyms
+            'CLAUSE', 'POLICY', 'PLAN', 'COVER', 'TERM', 'LIFE', 'RIDER', 'BENEFIT', 'SUM', 'ASSURED', 'PREMIUM',
+            'HEALTH', 'INSURANCE', 'OPTION', 'FEATURE', 'VALUE', 'EXIT', 'VARIANT', 'YEAR', 'AGE', 'COST', 'TAX',
+            'LOAN', 'BANK', 'CSR', 'ICICI', 'CS', 'IRDAI', 'CSR', 'CS', 'SBI', 'TATA', 'PLUS', 'MAX', 'ALLIANCE',
+            'SMART', 'REGULAR', 'SHIELD', 'ACCIDENTAL', 'RETURN', 'PREMIUMS', 'DISCOUNT', 'INCOME', 'PROTECT',
+            'FAMILY', 'PROTECTION', 'WAIVER', 'CRITICAL', 'ILLNESS', 'DEATH', 'SETTLEMENT', 'RATIO', 'SOLVENCY',
+            'COMPLAINTS', 'REVIEW', 'SUMMARY', 'SUMMARY', 'SUMMARY', 'SUMMARY', 'SUMMARY', 'SUMMARY', 'SUMMARY'
+        }
+        # Only keep true acronyms
+        acronyms = [a for a in acronym_pattern if a not in common_words]
         
-        # Common words to exclude from acronym detection
-        common_words = {'WHAT', 'WHEN', 'WHERE', 'WHY', 'HOW', 'THE', 'AND', 'FOR', 'ARE', 'YOU', 'YOUR', 'THEY', 'THEIR', 'WITH', 'FROM', 'THAT', 'THIS', 'HAVE', 'HAS', 'HAD', 'WILL', 'WOULD', 'COULD', 'SHOULD', 'MIGHT', 'MUST', 'CAN', 'MAY', 'GIVE', 'FULL', 'EXPLANATION', 'MEANING', 'DEFINITION', 'STANDS', 'ABOUT'}
-        
-        # Filter out common words
-        acronyms = [acronym for acronym in acronym_pattern if acronym not in common_words]
-        
-        # Additional check: only treat as acronym query if the query specifically asks for explanation/meaning
+        # Treat as acronym query if:
+        # 1. Query contains explanation keywords, OR
+        # 2. Query is just an acronym (like "NOPP?")
         is_explanation_query = any(keyword in query_upper for keyword in ['EXPLAIN', 'MEANING', 'DEFINITION', 'STANDS', 'WHAT IS', 'TELL ME ABOUT'])
+        is_standalone_acronym = len(acronyms) == 1 and len(query.strip()) <= 10  # Short query with just an acronym
         
-        if acronyms and is_explanation_query:
+        if acronyms and (is_explanation_query or is_standalone_acronym):
             print(f"Acronym explanation query detected: {acronyms}")
-            # For acronym queries, prioritize exact matches
-            return self._search_acronym_segments(acronyms, n_results)
+            # For multi-acronym queries, search and merge results for each
+            all_results = []
+            for acronym in acronyms:
+                results = self._search_acronym_segments([acronym], n_results)
+                all_results.extend(results)
+            # Remove duplicates by segment id
+            seen = set()
+            unique_results = []
+            for r in all_results:
+                seg_id = (r['video_id'], r['start'], r['end'])
+                if seg_id not in seen:
+                    unique_results.append(r)
+                    seen.add(seg_id)
+            # Sort by score (higher is better)
+            unique_results.sort(key=lambda x: x.get('score', 0), reverse=True)
+            return unique_results[:n_results]
         else:
-            # For regular queries, use semantic similarity
             print(f"Regular semantic query detected")
             return self._search_semantic_segments(query, n_results)
     
     def _search_acronym_segments(self, acronyms: List[str], n_results: int) -> List[Dict[str, Any]]:
-        """Search for segments containing specific acronyms, prioritizing exact matches"""
-        # Get all segments from the collection
+        """Search for segments containing specific acronyms, prioritizing exact matches only"""
         all_results = self.segment_collection.get()
-        
         if not all_results["ids"]:
             return []
-        
-        # Score segments based on acronym presence
         scored_segments = []
-        
         for i in range(len(all_results["ids"])):
             segment_text = all_results["documents"][i]
             segment_text_upper = segment_text.upper()
-            
-            # Check for exact acronym matches
+            # Only boost for exact acronym matches (case-insensitive, ignore spaces/hyphens)
             exact_matches = []
             for acronym in acronyms:
-                if acronym in segment_text_upper:
+                # Normalize: remove spaces/hyphens for matching
+                norm_acronym = acronym.replace(' ', '').replace('-', '').upper()
+                norm_text = segment_text_upper.replace(' ', '').replace('-', '')
+                # Use simple substring matching since we've already normalized
+                if norm_acronym in norm_text:
                     exact_matches.append(acronym)
-            
-            # Calculate score based on acronym matches
+            # Only boost if there is an exact match
             if exact_matches:
-                # Higher score for more acronym matches and longer segments (more context)
                 score = len(exact_matches) * 0.5 + (len(segment_text) / 1000) * 0.3
-                
-                # Bonus for segments that contain multiple requested acronyms
+                # Bonus for multiple requested acronyms in one segment
                 if len(exact_matches) > 1:
                     score += 0.2
-                
-                # Bonus for segments that seem to be explaining the acronym (contain keywords)
+                # Bonus for explanation keywords
                 explanation_keywords = ['MEANS', 'STANDS', 'REFERS', 'DEFINED', 'EXPLAIN', 'DESCRIBE', 'ABOUT', 'CRITERIA', 'NEED', 'OPPORTUNITY', 'PHYSICALLY', 'PAYING', 'CAPACITY']
                 keyword_bonus = sum(0.1 for keyword in explanation_keywords if keyword in segment_text_upper)
                 score += keyword_bonus
-                
-                # Debug: show what we found
                 print(f"Found acronym segment: {segment_text[:100]}... (acronyms: {exact_matches}, score: {score:.3f})")
-                
                 scored_segments.append({
                     "video_id": all_results["metadatas"][i]["video_id"],
                     "text": segment_text,
                     "start": all_results["metadatas"][i]["start"],
                     "end": all_results["metadatas"][i]["end"],
                     "timestamp": all_results["metadatas"][i]["timestamp"],
-                    "similarity": 1.0 - score,  # Convert to distance (lower is better)
+                    "similarity": 1.0 - score,  # Lower is better
                     "exact_matches": exact_matches,
                     "score": score
                 })
-        
-        # Sort by score (higher score = better match)
+        # Sort by score (higher is better)
         scored_segments.sort(key=lambda x: x["score"], reverse=True)
-        
         print(f"Found {len(scored_segments)} segments containing acronyms: {acronyms}")
-        
         # If no acronym segments found, fall back to semantic search
         if not scored_segments:
             print(f"No segments found containing acronyms {acronyms}, falling back to semantic search")
             return self._search_semantic_segments(f"What is {' '.join(acronyms)}?", n_results)
-        
-        # Take top n_results
         return scored_segments[:n_results]
     
     def _search_semantic_segments(self, query: str, n_results: int) -> List[Dict[str, Any]]:

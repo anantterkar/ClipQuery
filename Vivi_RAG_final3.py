@@ -106,7 +106,7 @@ def concatenate_videos(video_paths, output_filepath):
         return f"❌ Exception during concatenation: {str(e)}", None
 
 # ------------------ LLM Setup ------------------
-os.environ["GROQ_API_KEY"] = "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"
+os.environ["GROQ_API_KEY"] = "YOUR_API_HEY_HERE"
 
 llm = ChatGroq(model="llama-3.3-70b-versatile", temperature=1)
 llm_clipping = ChatGroq(model="llama-3.3-70b-versatile", temperature=1.2)  # Higher temperature for more creative clipping

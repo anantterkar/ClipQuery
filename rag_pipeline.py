@@ -69,8 +69,35 @@ class VectorStore:
             
         print("Transcript processing completed!")
         
+    def extract_acronyms_from_text(self, text: str) -> List[str]:
+        """Extract acronyms from text using improved detection logic"""
+        # Convert to uppercase for consistent matching
+        text_upper = text.upper()
+        
+        # Extract all-uppercase words of length 3+ (including those with punctuation)
+        acronym_pattern = re.findall(r'\b[A-Z]{3,}\b', text_upper)
+        
+        # Exclude common words and insurance terms
+        common_words = {
+            'WHAT', 'WHEN', 'WHERE', 'WHY', 'HOW', 'THE', 'AND', 'FOR', 'ARE', 'YOU', 'YOUR', 'THEY', 'THEIR',
+            'WITH', 'FROM', 'THAT', 'THIS', 'HAVE', 'HAS', 'HAD', 'WILL', 'WOULD', 'COULD', 'SHOULD', 'MIGHT',
+            'MUST', 'CAN', 'MAY', 'GIVE', 'FULL', 'EXPLANATION', 'MEANING', 'DEFINITION', 'STANDS', 'ABOUT',
+            # Insurance/finance terms to exclude as acronyms
+            'CLAUSE', 'POLICY', 'PLAN', 'COVER', 'TERM', 'LIFE', 'RIDER', 'BENEFIT', 'SUM', 'ASSURED', 'PREMIUM',
+            'HEALTH', 'INSURANCE', 'OPTION', 'FEATURE', 'VALUE', 'EXIT', 'VARIANT', 'YEAR', 'AGE', 'COST', 'TAX',
+            'LOAN', 'BANK', 'CSR', 'ICICI', 'CS', 'IRDAI', 'CSR', 'CS', 'SBI', 'TATA', 'PLUS', 'MAX', 'ALLIANCE',
+            'SMART', 'REGULAR', 'SHIELD', 'ACCIDENTAL', 'RETURN', 'PREMIUMS', 'DISCOUNT', 'INCOME', 'PROTECT',
+            'FAMILY', 'PROTECTION', 'WAIVER', 'CRITICAL', 'ILLNESS', 'DEATH', 'SETTLEMENT', 'RATIO', 'SOLVENCY',
+            'COMPLAINTS', 'REVIEW', 'SUMMARY', 'SUMMARY', 'SUMMARY', 'SUMMARY', 'SUMMARY', 'SUMMARY', 'SUMMARY'
+        }
+        
+        # Only keep true acronyms
+        acronyms = [a for a in acronym_pattern if a not in common_words]
+        
+        return acronyms
+
     def process_transcript_file(self, file_path: str, video_name: str):
-        """Process a single transcript file and extract segments"""
+        """Process a single transcript file and extract segments with acronym metadata"""
         try:
             with open(file_path, 'r', encoding='utf-8') as f:
                 content = f.read()
@@ -94,24 +121,40 @@ class VectorStore:
                         # Generate embedding for the text
                         embedding = self.embedding_model.encode(text)
                         
+                        # Extract acronyms from this segment
+                        acronyms = self.extract_acronyms_from_text(text)
+                        
                         # Create segment ID
                         segment_id = f"{video_name}_{start_time}_{end_time}"
                         
                         # Format timestamp for display
                         timestamp = f"[{start_time:.2f} - {end_time:.2f}]"
                         
-                        # Add segment to collection
+                        # Prepare metadata with acronym information
+                        metadata = {
+                            "video_id": video_name,
+                            "start": start_time,
+                            "end": end_time,
+                            "timestamp": timestamp,
+                            "acronyms": ",".join(acronyms) if acronyms else "",  # Store acronyms as comma-separated string
+                            "acronym_count": len(acronyms)  # Store count for quick filtering
+                        }
+                        
+                        # Add segment to collection with acronym metadata
                         self.segment_collection.add(
                             ids=[segment_id],
                             documents=[text],
                             embeddings=[embedding.tolist()],
-                            metadatas=[{
-                                "video_id": video_name,
-                                "start": start_time,
-                                "end": end_time,
-                                "timestamp": timestamp
-                            }]
+                            metadatas=[metadata]
                         )
+                        
+                        # Log if acronyms were found
+                        if acronyms:
+                            print(f"  Found acronyms in {video_name} [{start_time:.2f}-{end_time:.2f}]: {acronyms}")
+                        
+        except Exception as e:
+            print(f"Error processing {file_path}: {str(e)}")
+            raise
                         
         except Exception as e:
             print(f"Error processing {file_path}: {str(e)}")
@@ -168,7 +211,89 @@ class VectorStore:
             return self._search_semantic_segments(query, n_results)
     
     def _search_acronym_segments(self, acronyms: List[str], n_results: int) -> List[Dict[str, Any]]:
-        """Search for segments containing specific acronyms, prioritizing exact matches only"""
+        """Search for segments containing specific acronyms using metadata for faster filtering"""
+        print(f"🔍 Searching for acronyms using metadata: {acronyms}")
+        
+        # First, try to use metadata filtering for faster results
+        try:
+            # Get all segments that have acronyms in their metadata
+            all_results = self.segment_collection.get()
+            if not all_results["ids"]:
+                return []
+            
+            scored_segments = []
+            for i in range(len(all_results["ids"])):
+                metadata = all_results["metadatas"][i]
+                segment_text = all_results["documents"][i]
+                
+                # Check if this segment has any of the requested acronyms in its metadata
+                segment_acronyms_str = metadata.get("acronyms", "")
+                segment_acronyms = segment_acronyms_str.split(",") if segment_acronyms_str else []
+                matching_acronyms = []
+                
+                for acronym in acronyms:
+                    # Check if acronym exists in segment's metadata
+                    if acronym in segment_acronyms:
+                        matching_acronyms.append(acronym)
+                
+                # If we found matching acronyms in metadata, process this segment
+                if matching_acronyms:
+                    # Double-check with text content for accuracy
+                    segment_text_upper = segment_text.upper()
+                    verified_matches = []
+                    
+                    for acronym in matching_acronyms:
+                        # Normalize: remove spaces/hyphens for matching
+                        norm_acronym = acronym.replace(' ', '').replace('-', '').upper()
+                        norm_text = segment_text_upper.replace(' ', '').replace('-', '')
+                        # Use simple substring matching since we've already normalized
+                        if norm_acronym in norm_text:
+                            verified_matches.append(acronym)
+                    
+                    if verified_matches:
+                        # Calculate score based on matches and content quality
+                        score = len(verified_matches) * 0.5 + (len(segment_text) / 1000) * 0.3
+                        
+                        # Bonus for multiple requested acronyms in one segment
+                        if len(verified_matches) > 1:
+                            score += 0.2
+                        
+                        # Bonus for explanation keywords
+                        explanation_keywords = ['MEANS', 'STANDS', 'REFERS', 'DEFINED', 'EXPLAIN', 'DESCRIBE', 'ABOUT', 'CRITERIA', 'NEED', 'OPPORTUNITY', 'PHYSICALLY', 'PAYING', 'CAPACITY']
+                        keyword_bonus = sum(0.1 for keyword in explanation_keywords if keyword in segment_text_upper)
+                        score += keyword_bonus
+                        
+                        print(f"Found acronym segment: {segment_text[:100]}... (acronyms: {verified_matches}, score: {score:.3f})")
+                        scored_segments.append({
+                            "video_id": metadata["video_id"],
+                            "text": segment_text,
+                            "start": metadata["start"],
+                            "end": metadata["end"],
+                            "timestamp": metadata["timestamp"],
+                            "similarity": 1.0 - score,  # Lower is better
+                            "exact_matches": verified_matches,
+                            "score": score
+                        })
+            
+            # Sort by score (higher is better)
+            scored_segments.sort(key=lambda x: x["score"], reverse=True)
+            print(f"Found {len(scored_segments)} segments containing acronyms: {acronyms}")
+            
+            # If no acronym segments found, fall back to semantic search
+            if not scored_segments:
+                print(f"No segments found containing acronyms {acronyms}, falling back to semantic search")
+                return self._search_semantic_segments(f"What is {' '.join(acronyms)}?", n_results)
+            
+            return scored_segments[:n_results]
+            
+        except Exception as e:
+            print(f"Error in metadata-based acronym search: {e}")
+            # Fall back to original method if metadata search fails
+            print("Falling back to original acronym search method")
+            return self._search_acronym_segments_fallback(acronyms, n_results)
+    
+    def _search_acronym_segments_fallback(self, acronyms: List[str], n_results: int) -> List[Dict[str, Any]]:
+        """Fallback method for acronym search (original implementation)"""
         all_results = self.segment_collection.get()
         if not all_results["ids"]:
             return []

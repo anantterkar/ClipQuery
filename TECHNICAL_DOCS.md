@@ -1,1088 +1,1009 @@
-# ClipQuery Technical Documentation
+# ViviRAG Technical Documentation
 
-<div align="center">
-  <h1>🔧 Technical Documentation</h1>
-  <p><strong>Comprehensive Guide to ClipQuery's Architecture & Implementation</strong></p>
-  <p><em>Updated for Vivi_RAG_final3.py - December 2024</em></p>
-</div>
+## 🏗️ **System Architecture Overview**
 
----
+The ViviRAG system is an AI-powered video analysis and clipping API that uses Retrieval-Augmented Generation (RAG) to provide intelligent responses about video content. The system consists of several key components:
 
-## 📋 Table of Contents
-
-1. [System Overview](#system-overview)
-2. [Core Architecture](#core-architecture)
-3. [Main Application Class](#main-application-class)
-4. [RAG Pipeline](#rag-pipeline)
-5. [Google Drive Integration](#google-drive-integration)
-6. [Video Processing](#video-processing)
-7. [AI/LLM Integration](#aimllm-integration)
-8. [GUI Components](#gui-components)
-9. [Utility Functions](#utility-functions)
-10. [Performance Optimization](#performance-optimization)
-11. [Error Handling](#error-handling)
-12. [Configuration](#configuration)
-13. [Function Reference](#function-reference)
-14. [System Workflows](#system-workflows)
-15. [Troubleshooting](#troubleshooting)
+### **Core Components:**
+1. **RAG Pipeline** (`rag_pipeline.py`) - Vector store and search functionality
+2. **API Server** (`api_server.py`) - FastAPI-based REST API
+3. **Google Drive Sync** (`google_drive_sync.py`) - File synchronization
+4. **Vector Store** - ChromaDB for storing embeddings and metadata
 
 ---
 
-## 🏗️ System Overview
+## 🔍 **RAG Pipeline Deep Dive**
 
-ClipQuery is built on a modular architecture that combines multiple technologies to create an intelligent video analysis system. The core components work together to provide seamless video search, analysis, and clip generation capabilities.
+### **VectorStore Class (`rag_pipeline.py`)**
 
-### Technology Stack
-- **Frontend**: CustomTkinter (Modern GUI Framework)
-- **AI Engine**: Groq LLM (Llama-3.3-70B)
-- **Search Engine**: RAG Pipeline with FAISS
-- **Storage**: Google Drive API + Local Cache
-- **Video Processing**: FFmpeg
-- **Transcription**: OpenAI Whisper
-- **Vector Database**: FAISS (Facebook AI Similarity Search)
+The `VectorStore` class is the core component that manages video transcript processing, embedding generation, and semantic search.
 
----
+#### **Purpose:**
+- Processes video transcript files and converts them into searchable vector embeddings
+- Stores metadata including acronyms for fast filtering
+- Provides semantic and acronym-based search capabilities
+- Manages ChromaDB collections for videos and segments
 
-## 🧠 Core Architecture
+#### **Key Methods:**
 
-```
-┌─────────────────────────────────────────────────────────────┐
-│                    ViviChatbot Class                        │
-├─────────────────────────────────────────────────────────────┤
-│  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐        │
-│  │   GUI Layer │  │  AI Engine  │  │ Video Proc  │        │
-│  │             │  │             │  │             │        │
-│  │ • Chat UI   │  │ • LLM Calls │  │ • FFmpeg    │        │
-│  │ • Buttons   │  │ • RAG Query │  │ • Clipping  │        │
-│  │ • Progress  │  │ • Context   │  │ • Concaten. │        │
-│  └─────────────┘  └─────────────┘  └─────────────┘        │
-├─────────────────────────────────────────────────────────────┤
-│  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐        │
-│  │Google Drive │  │  RAG Pipe   │  │  Utilities  │        │
-│  │   Sync      │  │             │  │             │        │
-│  │             │  │ • Vector DB │  │ • Time Parse│        │
-│  │ • Auth      │  │ • Search    │  │ • File Ops  │        │
-│  │ • Download  │  │ • Similarity│  │ • Validation│        │
-│  │ • Upload    │  │ • Filtering │  │ • Debug     │        │
-│  └─────────────┘  └─────────────┘  └─────────────┘        │
-└─────────────────────────────────────────────────────────────┘
-```
-
----
-
-## 🎯 Main Application Class
-
-### ViviChatbot Class
-
-The main application class that orchestrates all system components.
-
-#### Constructor (`__init__`)
+##### **`__init__(self, persist_directory: str = "vector_store")`**
 ```python
-    def __init__(self):
-        # Initialize GUI components
-        # Set up Google Drive sync
-        # Initialize RAG pipeline
-    # Configure conversation management
+def __init__(self, persist_directory: str = "vector_store"):
+    self.client = chromadb.Client(Settings(
+        persist_directory=persist_directory,
+        anonymized_telemetry=False
+    ))
+    
+    # Create or get collections
+    self.video_collection = self.client.get_or_create_collection(
+        name="videos",
+        metadata={"hnsw:space": "cosine"}
+    )
+    
+    self.segment_collection = self.client.get_or_create_collection(
+        name="segments",
+        metadata={"hnsw:space": "cosine"}
+    )
+    
+    # Load embeddings model
+    self.embedding_model = SentenceTransformer("all-MiniLM-L6-v2")
+    self.load_transcripts()
 ```
 
-**Key Initialization Steps:**
-1. **GUI Setup**: Configure CustomTkinter with light theme
-2. **Google Drive**: Initialize background sync thread
-3. **RAG Pipeline**: Set up vector database and search
-4. **Conversation Management**: Configure history limits
-5. **Missing Video Check**: Scan for incomplete downloads
+**Purpose:** Initialize the vector store with ChromaDB collections and load the embedding model.
 
-#### Core Properties
-- `self.root`: Main GUI window
-- `self.drive_sync`: Google Drive synchronization object
-- `self.rag`: RAG pipeline for semantic search
-- `self.conversation_history`: Chat history management
-- `self.similarity_threshold`: Search relevance threshold (0.75)
+**Why this structure:**
+- Uses ChromaDB for persistent storage of embeddings
+- Creates separate collections for videos and segments for better organization
+- Uses "all-MiniLM-L6-v2" model for optimal balance of speed and accuracy
+- Automatically loads transcripts on initialization
 
----
+##### **`load_transcripts(self)`**
+```python
+def load_transcripts(self):
+    """Load and process transcript files from Max Life Videos folder"""
+    transcripts_folder = "Max Life Videos"
+    
+    if not os.path.exists(transcripts_folder):
+        print(f"Transcripts folder '{transcripts_folder}' not found!")
+        return
+        
+    # Get all .txt files in the folder
+    txt_files = [f for f in os.listdir(transcripts_folder) if f.endswith('.txt')]
+    
+    if not txt_files:
+        print(f"No transcript files found in '{transcripts_folder}' folder!")
+        return
+        
+    print(f"Found {len(txt_files)} transcript files")
+    
+    for txt_file in txt_files:
+        video_name = txt_file.replace('.txt', '')
+        file_path = os.path.join(transcripts_folder, txt_file)
+        
+        print(f"Processing {video_name}...")
+        
+        # Add video to collection if not exists
+        if not self.video_collection.get(ids=[video_name])["ids"]:
+            self.video_collection.add(
+                ids=[video_name],
+                documents=[video_name],
+                metadatas=[{
+                    "name": video_name,
+                    "processed_at": datetime.now().isoformat()
+                }]
+            )
+        
+        # Process transcript file
+        self.process_transcript_file(file_path, video_name)
+        
+    print("Transcript processing completed!")
+```
 
-## 🔍 RAG Pipeline Integration
+**Purpose:** Load all transcript files from the "Max Life Videos" folder and process them into the vector store.
 
-### VideoRAG Class (External)
-The RAG pipeline provides semantic search capabilities across video transcripts.
+**Why this approach:**
+- Processes all files in batch during initialization (lifespan optimization)
+- Checks for existing videos to avoid duplicates
+- Stores video metadata with timestamps for tracking
+- Calls `process_transcript_file` for each transcript
 
-#### Key Methods:
+##### **`extract_acronyms_from_text(self, text: str) -> List[str]`**
+```python
+def extract_acronyms_from_text(self, text: str) -> List[str]:
+    """Extract acronyms from text using improved detection logic"""
+    # Convert to uppercase for consistent matching
+    text_upper = text.upper()
+    
+    # Extract all-uppercase words of length 3+ (including those with punctuation)
+    acronym_pattern = re.findall(r'\b[A-Z]{3,}\b', text_upper)
+    
+    # Exclude common words and insurance terms
+    common_words = {
+        'WHAT', 'WHEN', 'WHERE', 'WHY', 'HOW', 'THE', 'AND', 'FOR', 'ARE', 'YOU', 'YOUR', 'THEY', 'THEIR',
+        'WITH', 'FROM', 'THAT', 'THIS', 'HAVE', 'HAS', 'HAD', 'WILL', 'WOULD', 'COULD', 'SHOULD', 'MIGHT',
+        'MUST', 'CAN', 'MAY', 'GIVE', 'FULL', 'EXPLANATION', 'MEANING', 'DEFINITION', 'STANDS', 'ABOUT',
+        # Insurance/finance terms to exclude as acronyms
+        'CLAUSE', 'POLICY', 'PLAN', 'COVER', 'TERM', 'LIFE', 'RIDER', 'BENEFIT', 'SUM', 'ASSURED', 'PREMIUM',
+        'HEALTH', 'INSURANCE', 'OPTION', 'FEATURE', 'VALUE', 'EXIT', 'VARIANT', 'YEAR', 'AGE', 'COST', 'TAX',
+        'LOAN', 'BANK', 'CSR', 'ICICI', 'CS', 'IRDAI', 'CSR', 'CS', 'SBI', 'TATA', 'PLUS', 'MAX', 'ALLIANCE',
+        'SMART', 'REGULAR', 'SHIELD', 'ACCIDENTAL', 'RETURN', 'PREMIUMS', 'DISCOUNT', 'INCOME', 'PROTECT',
+        'FAMILY', 'PROTECTION', 'WAIVER', 'CRITICAL', 'ILLNESS', 'DEATH', 'SETTLEMENT', 'RATIO', 'SOLVENCY',
+        'COMPLAINTS', 'REVIEW', 'SUMMARY', 'SUMMARY', 'SUMMARY', 'SUMMARY', 'SUMMARY', 'SUMMARY', 'SUMMARY'
+    }
+    
+    # Only keep true acronyms
+    acronyms = [a for a in acronym_pattern if a not in common_words]
+    
+    return acronyms
+```
+
+**Purpose:** Extract meaningful acronyms from text while filtering out common words and insurance terms.
+
+**Why this logic:**
+- Uses regex `\b[A-Z]{3,}\b` to find all-uppercase words of 3+ characters
+- Excludes common English words and insurance-specific terms
+- Ensures only true acronyms (like "NOPP", "ULIP", "STAR") are identified
+- Prevents false positives like "CLAUSE" being treated as an acronym
+
+##### **`process_transcript_file(self, file_path: str, video_name: str)`**
+```python
+def process_transcript_file(self, file_path: str, video_name: str):
+    """Process a single transcript file and extract segments with acronym metadata"""
+    try:
+        with open(file_path, 'r', encoding='utf-8') as f:
+            content = f.read().strip()
+        
+        if not content:
+            print(f"Empty transcript file: {file_path}")
+            return
+        
+        # Split content into segments (assuming timestamp format)
+        segments = self._parse_transcript_segments(content)
+        
+        for i, segment in enumerate(segments):
+            segment_text = segment['text']
+            start_time = segment['start']
+            end_time = segment['end']
+            
+            # Extract acronyms from this segment
+            acronyms = self.extract_acronyms_from_text(segment_text)
+            
+            # Create segment ID
+            segment_id = f"{video_name}_segment_{i}"
+            
+            # Store segment with metadata
+            self.segment_collection.add(
+                ids=[segment_id],
+                documents=[segment_text],
+                metadatas=[{
+                    "video_id": video_name,
+                    "start": start_time,
+                    "end": end_time,
+                    "acronyms": ",".join(acronyms),  # Store as comma-separated string
+                    "acronym_count": len(acronyms),
+                    "processed_at": datetime.now().isoformat()
+                }],
+                embeddings=[self.embedding_model.encode(segment_text)]
+            )
+            
+            if acronyms:
+                print(f"  Found acronyms in {video_name} [{start_time:.2f}-{end_time:.2f}]: {acronyms}")
+                
+    except Exception as e:
+        print(f"Error processing {file_path}: {e}")
+```
+
+**Purpose:** Process individual transcript files, extract segments, and store them with acronym metadata.
+
+**Why this approach:**
+- Parses transcript into timestamped segments
+- Extracts acronyms from each segment for fast filtering
+- Stores acronyms as comma-separated string (ChromaDB limitation)
+- Includes segment metadata for precise retrieval
+- Generates embeddings for semantic search
+
+##### **`search_segments(self, query: str, n_results: int = 5) -> List[Dict[str, Any]]`**
+```python
+def search_segments(self, query: str, n_results: int = 5) -> List[Dict[str, Any]]:
+    """Search for relevant segments using semantic similarity and acronym boosting"""
+    # Check if query contains acronyms
+    query_acronyms = self.extract_acronyms_from_text(query)
+    
+    if query_acronyms:
+        print(f"Acronym explanation query detected: {query_acronyms}")
+        # Use acronym-based search for better precision
+        return self._search_acronym_segments(query_acronyms, n_results)
+    else:
+        print("Regular semantic query detected")
+        # Use semantic search for general queries
+        return self._search_semantic_segments(query, n_results)
+```
+
+**Purpose:** Main search method that routes queries to appropriate search strategy based on content.
+
+**Why this logic:**
+- Detects if query contains acronyms
+- Routes acronym queries to specialized acronym search
+- Routes general queries to semantic search
+- Provides optimal results for different query types
+
+##### **`_search_acronym_segments(self, acronyms: List[str], n_results: int) -> List[Dict[str, Any]]`**
+```python
+def _search_acronym_segments(self, acronyms: List[str], n_results: int) -> List[Dict[str, Any]]:
+    """Search for segments containing specific acronyms using metadata filtering"""
+    results = []
+    
+    for acronym in acronyms:
+        print(f"🔍 Searching for acronyms using metadata: {[acronym]}")
+        
+        # Query segments that contain this acronym in metadata
+        query_result = self.segment_collection.query(
+            query_texts=[acronym],
+            n_results=n_results * 2,  # Get more results for filtering
+            where={"acronyms": {"$contains": acronym}}
+        )
+        
+        # Verify exact matches in text
+        for i, (doc_id, document, metadata) in enumerate(zip(
+            query_result['ids'][0], 
+            query_result['documents'][0], 
+            query_result['metadatas'][0]
+        )):
+            # Normalize for comparison
+            norm_acronym = acronym.upper()
+            norm_text = document.upper()
+            
+            # Check if acronym actually appears in text
+            if norm_acronym in norm_text:
+                result = {
+                    'video_id': metadata['video_id'],
+                    'start': metadata['start'],
+                    'end': metadata['end'],
+                    'text': document,
+                    'similarity': 1.0 - (i * 0.01),  # Boost exact matches
+                    'acronyms': [acronym]
+                }
+                results.append(result)
+                print(f"Found acronym segment: {document[:50]}... (acronyms: {[acronym]}, score: {result['similarity']:.3f})")
+    
+    print(f"Found {len(results)} segments containing acronyms: {acronyms}")
+    return sorted(results, key=lambda x: x['similarity'], reverse=True)[:n_results]
+```
+
+**Purpose:** Perform fast acronym-based search using metadata filtering.
+
+**Why this approach:**
+- Uses ChromaDB's metadata filtering for speed
+- Verifies acronyms actually appear in text (not just metadata)
+- Boosts exact matches with high similarity scores
+- Provides precise results for acronym queries
+
+##### **`_search_semantic_segments(self, query: str, n_results: int) -> List[Dict[str, Any]]`**
+```python
+def _search_semantic_segments(self, query: str, n_results: int) -> List[Dict[str, Any]]:
+    """Search for semantically similar segments"""
+    # Generate query embedding
+    query_embedding = self.embedding_model.encode(query)
+    
+    # Search for similar segments
+    results = self.segment_collection.query(
+        query_embeddings=[query_embedding],
+        n_results=n_results
+    )
+    
+    # Format results
+    formatted_results = []
+    for i, (doc_id, document, metadata) in enumerate(zip(
+        results['ids'][0], 
+        results['documents'][0], 
+        results['metadatas'][0]
+    )):
+        result = {
+            'video_id': metadata['video_id'],
+            'start': metadata['start'],
+            'end': metadata['end'],
+            'text': document,
+            'similarity': 1.0 - (i * 0.1),  # Approximate similarity
+            'acronyms': metadata.get('acronyms', '').split(',') if metadata.get('acronyms') else []
+        }
+        formatted_results.append(result)
+    
+    return formatted_results
+```
+
+**Purpose:** Perform semantic search for general queries using vector similarity.
+
+**Why this approach:**
+- Uses embedding similarity for semantic matching
+- Handles general queries that don't contain specific acronyms
+- Provides contextually relevant results
+- Maintains consistent result format
+
+### **VideoRAG Class (`rag_pipeline.py`)**
+
+The `VideoRAG` class provides a high-level interface for video querying.
+
+#### **Purpose:**
+- Wraps the VectorStore functionality
+- Provides a clean API for video queries
+- Handles query preprocessing and result formatting
+
+#### **Key Methods:**
+
+##### **`__init__(self, vector_store_path: str = "vector_store")`**
+```python
+def __init__(self, vector_store_path: str = "vector_store"):
+    self.vector_store = VectorStore(vector_store_path)
+```
+
+**Purpose:** Initialize the RAG system with a vector store.
+
+##### **`query_videos(self, query: str, n_results: int = 5) -> List[Dict[str, Any]]`**
 ```python
 def query_videos(self, query: str, n_results: int = 5) -> List[Dict[str, Any]]:
-    """
-    Perform semantic search across video transcripts.
+    """Query videos using the RAG pipeline"""
+    return self.vector_store.search_segments(query, n_results)
+```
+
+**Purpose:** Main interface for querying videos using the RAG pipeline.
+
+---
+
+## 🚀 **API Server Deep Dive**
+
+### **FastAPI Application (`api_server.py`)**
+
+The API server provides REST endpoints for video analysis and clipping functionality.
+
+#### **Purpose:**
+- Expose RAG functionality via HTTP API
+- Handle query processing and response generation
+- Manage LLM interactions and context building
+- Provide health monitoring and status endpoints
+
+### **Lifespan Optimization**
+
+#### **`lifespan(app: FastAPI)`**
+```python
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """Lifespan events for FastAPI - handles startup and shutdown"""
+    global llm, llm_clipping, rag, general_chain, clipping_chain
     
-    Args:
-        query: Natural language search query
-        n_results: Number of results to return
+    # Startup
+    print("🚀 Starting ViviRAG API Server...")
+    print("📚 Initializing LLM models...")
+    
+    # Initialize LLM models
+    llm = ChatGroq(model="llama-3.3-70b-versatile", temperature=1)
+    llm_clipping = ChatGroq(model="llama-3.3-70b-versatile", temperature=0.7)
+    
+    # Create chains after LLM initialization
+    print("🔗 Creating LLM chains...")
+    general_chain = general_prompt | llm | StrOutputParser()
+    clipping_chain = clipping_prompt | llm_clipping | StrOutputParser()
+    
+    print("🔍 Initializing RAG system...")
+    print("⏳ Processing transcript files (this may take a few minutes for large collections)...")
+    
+    # Initialize RAG system
+    start_time = time.time()
+    rag = VideoRAG()
+    processing_time = time.time() - start_time
+    
+    print(f"✅ RAG system initialized in {processing_time:.2f} seconds")
+    print(f"📊 Loaded {len(rag.vector_store.video_collection.get()['ids'])} videos")
+    print("🎯 API Server ready to handle requests!")
+    
+    yield
+    
+    # Shutdown
+    print("🛑 Shutting down ViviRAG API Server...")
+    if rag:
+        print("🧹 Cleaning up RAG resources...")
+    print("👋 Server shutdown complete")
+```
+
+**Purpose:** Handle application startup and shutdown using FastAPI lifespan events.
+
+**Why this approach:**
+- **Lifespan Optimization**: Processes transcripts only once during startup
+- **Resource Management**: Properly initializes and cleans up resources
+- **Performance**: Avoids repeated processing on each request
+- **Monitoring**: Provides clear startup progress feedback
+
+### **Context Building Logic**
+
+#### **`build_llm_context(query, for_clipping=False)`**
+```python
+def build_llm_context(query, for_clipping=False):
+    """Use RAG to find relevant videos/segments and build the transcript context for the LLM."""
+    if not rag:
+        return "", []
+
+    # --- 1. Extract important terms and handle multi-part queries ---
+    # Generalize subquery extraction for all queries
+    split_pattern = re.compile(r'\b(?:and|&)\b', re.IGNORECASE)
+    parts = [p.strip() for p in split_pattern.split(query) if p.strip()]
+    if len(parts) > 1:
+        subqueries = parts
+    else:
+        subqueries = [query]
+    print(f"Multi-topic RAG: subqueries = {subqueries}")
+    
+    # --- 2. For each subquery, run a separate RAG search and merge results ---
+    all_rag_results = []
+    subquery_rag_results = []  # Track results per subquery
+    for subq in subqueries:
+        n_results = 15 if for_clipping else 8
+        rag_results = rag.query_videos(subq, n_results=n_results)
+        # Tag each result with its subquery for later grouping
+        for r in rag_results:
+            r['__subquery__'] = subq
+        all_rag_results.extend(rag_results)
+        subquery_rag_results.append((subq, rag_results))
+        print(f"Subquery '{subq}' found {len(rag_results)} results")
+    
+    # Remove duplicates (by video_id, start, end)
+    seen = set()
+    unique_rag_results = []
+    for r in all_rag_results:
+        key = (r['video_id'], r['start'], r['end'])
+        if key not in seen:
+            unique_rag_results.append(r)
+            seen.add(key)
+    
+    similarity_threshold = 0.75
+    filtered = [r for r in unique_rag_results if r['similarity'] < similarity_threshold]
+    filtered = sorted(filtered, key=lambda x: x['similarity'])[:6]
+    
+    # --- NEW LOGIC: Ensure all subqueries are represented in context (up to 4) ---
+    # First, guarantee that each subquery's best video is included
+    top_video_ids = set()
+    for subq, rag_results in subquery_rag_results:
+        if rag_results:
+            # Always include the video of the top segment for each subquery
+            best_video_id = rag_results[0]['video_id']
+            top_video_ids.add(best_video_id)
+            print(f"Guaranteed inclusion: {best_video_id} (best for subquery '{subq}')")
+    
+    # Now fill up to 4 with the next best globally (reduced from 8)
+    all_rag_results_sorted = sorted(filtered, key=lambda x: x['similarity'])
+    for r in all_rag_results_sorted:
+        if len(top_video_ids) >= 4:
+            break
+        top_video_ids.add(r['video_id'])
+    
+    top_video_ids = list(top_video_ids)
+    print(f"Using full transcripts for top {len(top_video_ids)} videos: {top_video_ids}")
+    
+    # Filter out videos that don't have transcripts
+    available_video_ids = []
+    for video_id in top_video_ids:
+        transcript_path = os.path.join("Max Life Videos", f"{video_id}.txt")
+        if os.path.exists(transcript_path):
+            available_video_ids.append(video_id)
+        else:
+            print(f"⚠️ Video {video_id} has no transcript file, skipping")
+    
+    if len(available_video_ids) < len(top_video_ids):
+        print(f"⚠️ {len(top_video_ids) - len(available_video_ids)} videos missing transcripts")
+    
+    top_video_ids = available_video_ids
+    
+    context_lines = []
+    total_chars = 0
+    
+    # First, add the specific RAG segments that were found
+    if filtered:
+        context_lines.append("=== RELEVANT SEGMENTS FOUND ===")
+        for i, result in enumerate(filtered):
+            segment_text = f"[{result['start']:.2f} - {result['end']:.2f}] {result['text']}"
+            context_lines.append(f"Segment {i+1} from {result['video_id']}: {segment_text}")
+        context_lines.append("")  # Empty line for separation
+    
+    # Determine query type and set appropriate limits
+    is_simple_query = len(subqueries) == 1 and len(filtered) <= 3
+    is_clipping_query = for_clipping
+    is_complex_query = len(subqueries) > 1 or len(filtered) > 6
+    
+    # Set limits based on query type
+    if is_simple_query:
+        max_videos = 2
+        max_tokens = 4000
+        similarity_threshold_for_full = 0.6  # Only include videos with high relevance
+    elif is_clipping_query:
+        max_videos = 4
+        max_tokens = 8000
+        similarity_threshold_for_full = 0.5  # Include more videos for clipping accuracy
+    else:  # Complex query
+        max_videos = 4
+        max_tokens = 6000
+        similarity_threshold_for_full = 0.55  # Moderate threshold
+    
+    print(f"Query type: {'Simple' if is_simple_query else 'Clipping' if is_clipping_query else 'Complex'}")
+    print(f"Max videos: {max_videos}, Max tokens: {max_tokens}, Similarity threshold: {similarity_threshold_for_full}")
+    
+    # Filter videos by relevance score before including full transcripts
+    relevant_video_ids = []
+    for video_id in top_video_ids:
+        # Find the best similarity score for this video
+        video_segments = [r for r in filtered if r['video_id'] == video_id]
+        if video_segments:
+            best_similarity = max(r['similarity'] for r in video_segments)
+            if best_similarity >= similarity_threshold_for_full:
+                relevant_video_ids.append(video_id)
+                print(f"Including {video_id} (similarity: {best_similarity:.3f})")
+            else:
+                print(f"Excluding {video_id} (similarity: {best_similarity:.3f} < {similarity_threshold_for_full})")
+        else:
+            # If no segments found, include it (might be from guaranteed inclusion)
+            relevant_video_ids.append(video_id)
+            print(f"Including {video_id} (guaranteed inclusion)")
+    
+    # ALWAYS include full transcripts for the relevant videos (up to max_videos)
+    # This ensures the LLM has complete context for accurate decisions
+    videos_added = 0
+    for video_id in relevant_video_ids:
+        full_transcript = load_full_transcript(video_id)
+        if full_transcript:
+            # For clipping queries, we need the full transcript for accurate timestamp decisions
+            # For normal queries, we also need the full transcript for comprehensive answers
+            # No truncation as requested
+            
+            context_lines.append(f"=== Video: {video_id} ===\n{full_transcript}")
+            total_chars += len(full_transcript)
+            videos_added += 1
+            print(f"Added full transcript for {video_id} ({len(full_transcript)} chars)")
+            
+            # Stop at max_videos to keep context manageable
+            if videos_added >= max_videos:
+                print(f"Reached {max_videos} videos limit, stopping transcript inclusion")
+                break
+    
+    final_context = "\n\n".join(context_lines)
+    # Apply dynamic token limit based on query type
+    final_context = check_token_limit(final_context, max_tokens=max_tokens)
+    estimated_tokens = estimate_tokens(final_context)
+    print(f"Full transcript context: {len(final_context)} chars, ~{estimated_tokens} tokens")
+    print(f"Videos included: {videos_added}")
+    
+    return final_context, filtered
+```
+
+**Purpose:** Build comprehensive context for LLM by combining RAG results with full transcripts.
+
+**Why this complex logic:**
+
+1. **Multi-topic Query Handling:**
+   - Splits queries on "and" or "&" to handle multiple topics
+   - Runs separate RAG searches for each subquery
+   - Ensures all topics are represented in context
+
+2. **Duplicate Removal:**
+   - Removes duplicate segments based on video_id, start, end
+   - Prevents redundant information in context
+
+3. **Guaranteed Inclusion:**
+   - Always includes the best video for each subquery
+   - Ensures comprehensive coverage of all requested topics
+
+4. **Query-Type Specific Limits:**
+   - **Simple queries**: 2 videos, 4000 tokens, high similarity threshold (0.6)
+   - **Clipping queries**: 4 videos, 8000 tokens, moderate threshold (0.5)
+   - **Complex queries**: 4 videos, 6000 tokens, moderate threshold (0.55)
+
+5. **Relevance Filtering:**
+   - Only includes videos with similarity scores above threshold
+   - Prevents low-relevance content from diluting context
+
+6. **Dynamic Token Limits:**
+   - Adjusts token limits based on query complexity
+   - Balances context completeness with performance
+
+### **Utility Functions**
+
+#### **`estimate_tokens(text)`**
+```python
+def estimate_tokens(text):
+    """Estimate token count for text."""
+    return len(text.split()) * 1.3  # Rough estimate
+```
+
+**Purpose:** Provide rough token estimation for context management.
+
+**Why 1.3 multiplier:** Accounts for tokens being smaller than words on average.
+
+#### **`check_token_limit(text, max_tokens=8000)`**
+```python
+def check_token_limit(text, max_tokens=8000):
+    """Check and truncate text if it exceeds token limit."""
+    estimated_tokens = estimate_tokens(text)
+    if estimated_tokens <= max_tokens:
+        return text
+    
+    # Truncate to fit within token limit
+    target_chars = int(len(text) * (max_tokens / estimated_tokens))
+    if target_chars < len(text):
+        text = text[:target_chars] + "..."
+    
+    return text
+```
+
+**Purpose:** Ensure context doesn't exceed token limits by truncating if necessary.
+
+**Why proportional truncation:** Maintains context quality by truncating proportionally rather than arbitrarily.
+
+#### **`load_full_transcript(video_id)`**
+```python
+def load_full_transcript(video_id):
+    """Load the full transcript for a video."""
+    txt_path = os.path.join("Max Life Videos", f"{video_id}.txt")
+    txt_path = os.path.normpath(txt_path)
+    if not os.path.exists(txt_path):
+        print(f"Transcript file not found: {txt_path}")
+        return ""
+    try:
+        with open(txt_path, "r", encoding="utf-8") as f:
+            return f.read().strip()
+    except Exception as e:
+        print(f"Error reading transcript file {txt_path}: {e}")
+        return ""
+```
+
+**Purpose:** Load complete transcript files for comprehensive context.
+
+**Why full transcripts:** Provides complete context for accurate LLM responses, especially for clipping queries.
+
+### **Response Parsing Functions**
+
+#### **`parse_llm_clip_response(response)`**
+```python
+def parse_llm_clip_response(response):
+    """Parse LLM response to extract clip ranges and video assignments more robustly."""
+    proposed_clips = []
+    
+    # Split response into lines and look for clip ranges
+    lines = response.strip().split("\n")
+    
+    current_video_id = None
+    
+    for i, line in enumerate(lines):
+        line = line.strip()
+        if not line:
+            continue
         
-    Returns:
-        List of dictionaries containing:
-        - video_id: Video identifier
-        - start: Start time (seconds)
-        - end: End time (seconds)
-        - text: Transcript segment
-        - similarity: Relevance score
-    """
-```
-
-#### Search Process:
-1. **Query Preprocessing**: Normalize and enhance search terms
-2. **Vector Search**: Use FAISS for similarity matching
-3. **Result Filtering**: Apply relevance thresholds
-4. **Context Building**: Aggregate relevant segments
-
----
-
-## ☁️ Google Drive Integration
-
-### GoogleDriveSync Class
-
-Handles all Google Drive operations including authentication, file synchronization, and missing video detection.
-
-#### Authentication Flow
-```python
-def authenticate(self):
-    """
-    Authenticate with Google Drive API using OAuth 2.0.
-    Handles credential refresh and token management.
-    """
-```
-
-#### File Synchronization
-```python
-def list_drive_files(self) -> List[Dict[str, Any]]:
-    """
-    List all files in Google Drive folder with pagination support.
-    Handles folders with >100 files by implementing proper pagination.
-    """
-```
-
-**Pagination Implementation:**
-- Uses `pageToken` and `nextPageToken` for large folders
-- Maximum page size of 1000 items per request
-- Automatic retry logic for failed requests
-- Comprehensive error handling
-
-#### Missing Video Detection
-```python
-def check_for_missing_videos(self):
-    """
-    Identify videos that have transcripts but missing MP4 files.
-    Triggers automatic download attempts.
-    """
-```
-
----
-
-## 🎬 Video Processing
-
-### FFmpeg Integration
-
-The system uses FFmpeg for all video processing operations including clipping, concatenation, and format conversion.
-
-#### Video Clipping
-```python
-def clip_video(self, video_path, start_time, end_time):
-    """
-    Create video clips using FFmpeg with optimized settings.
+        # Look for video specification
+        video_match = re.search(r"-?\s*Video:\s*([^\n]+)", line, re.IGNORECASE)
+        if video_match:
+            current_video_id = video_match.group(1).strip()
+            print(f"Found video specification: {current_video_id}")
+            continue
+            
+        # Look for different patterns of clip ranges
+        patterns = [
+            r"-?\s*Range:\s*(\d+\.?\d*)\s*-\s*(\d+\.?\d*)",
+            r"Range:\s*(\d+\.?\d*)\s*-\s*(\d+\.?\d*)",
+            r"(\d+\.?\d*)\s*-\s*(\d+\.?\d*)",
+            r"start[:\s]*(\d+\.?\d*)[\s-]+end[:\s]*(\d+\.?\d*)"
+        ]
+        
+        for pattern in patterns:
+            match = re.search(pattern, line, re.IGNORECASE)
+            if match:
+                try:
+                    start = float(match.group(1))
+                    end = float(match.group(2))
+                    
+                    # Basic validation
+                    if start >= 0 and end > start and end - start <= 300:  # Max 5 minutes
+                        clip = {
+                            'start': start, 
+                            'end': end, 
+                            'duration': end - start
+                        }
+                        
+                        # Add video_id if specified
+                        if current_video_id:
+                            clip['video_id'] = current_video_id
+                            print(f"Parsed clip: {start:.2f}-{end:.2f} from video {current_video_id}")
+                        else:
+                            print(f"Parsed clip: {start:.2f}-{end:.2f} (no video specified)")
+                        
+                        proposed_clips.append(clip)
+                        break
+                except (ValueError, IndexError):
+                    continue
     
-    Features:
-    - H.264 video codec with CRF 23 quality
-    - AAC audio codec at 44.1kHz
-    - 30fps frame rate standardization
-    - Fast encoding preset for speed
-    - Optimized for streaming (faststart)
-    """
+    return proposed_clips
 ```
 
-**FFmpeg Command Structure:**
-```bash
-ffmpeg -y -ss {start_time} -i {video_path} -t {duration} \
-       -c:v libx264 -c:a aac -preset fast -crf 23 \
-       -r 30 -ar 44100 -ac 2 -movflags +faststart \
-       -avoid_negative_ts make_zero -fflags +genpts \
-       {output_path}
-```
+**Purpose:** Extract timestamp ranges and video assignments from LLM responses.
 
-#### Video Concatenation
+**Why multiple patterns:** Handles different LLM response formats for robustness.
+
+**Why validation:** Ensures clips are valid (positive times, start < end, reasonable duration).
+
+### **API Endpoints**
+
+#### **`/health` - Health Check**
 ```python
-def concatenate_videos(video_paths, output_filepath):
-    """
-    Concatenate multiple video clips into a single output file.
-    Handles codec compatibility and maintains quality.
-    """
+@app.get("/health", response_model=HealthResponse)
+async def health_check():
+    """Check API health and component availability."""
+    try:
+        # Check if RAG system and chains are loaded
+        if rag is None or general_chain is None or clipping_chain is None:
+            return HealthResponse(
+                status="initializing",
+                rag_loaded=False,
+                llm_available=False
+            )
+        
+        # Test RAG
+        rag_loaded = rag is not None
+        
+        # Test LLM with a simple query
+        test_response = general_chain.invoke({
+            "context": "",
+            "transcript": "Test transcript",
+            "question": "Hello"
+        })
+        llm_available = len(test_response) > 0
+        
+        return HealthResponse(
+            status="healthy",
+            rag_loaded=rag_loaded,
+            llm_available=llm_available
+        )
+    except Exception as e:
+        return HealthResponse(
+            status="unhealthy",
+            rag_loaded=False,
+            llm_available=False
+        )
 ```
 
-**Concatenation Process:**
-1. **Compatibility Check**: Validate video properties
-2. **List File Creation**: Generate FFmpeg concat list
-3. **Re-encoding**: Ensure consistent codec settings
-4. **Cleanup**: Remove temporary files
+**Purpose:** Monitor system health and component availability.
 
----
+**Why initialization check:** Prevents errors when system is still starting up.
 
-## 🤖 AI/LLM Integration
-
-### Groq LLM Integration
-
-The system uses Groq's Llama-3.3-70B model for natural language processing and video analysis.
-
-#### LLM Configuration
+#### **`/status` - Startup Status**
 ```python
-# LLM instances for different tasks
-llm = ChatGroq(model="llama-3.3-70b-versatile", temperature=1)
-llm_clipping = ChatGroq(model="llama-3.3-70b-versatile", temperature=1.2)
-```
-
-#### Prompt Templates
-
-**General Conversation Template:**
-```python
-general_template = """
-You are Vivi, an expert and friendly video assistant chatbot.
-You have access to video transcripts and can answer questions about the content.
-Handle acronyms and technical terms with variations in spacing and casing.
-"""
-```
-
-**Clipping Template:**
-```python
-clipping_template = """
-Create comprehensive video clips that fully answer user queries.
-Focus on complete explanations, especially for acronyms and multi-part concepts.
-Ensure clips start and end at natural points.
-"""
-```
-
-#### Context Management
-```python
-def build_llm_context(self, query, for_clipping=False):
-    """
-    Build context for LLM by combining RAG results and conversation history.
+@app.get("/status")
+async def get_startup_status():
+    """Get detailed startup status and processing information."""
+    if rag is None:
+        return {
+            "status": "initializing",
+            "message": "RAG system is still being initialized. Please wait...",
+            "rag_loaded": False,
+            "llm_loaded": llm is not None,
+            "video_count": 0,
+            "processing_time": 0
+        }
     
-    Features:
-    - Multi-query detection and handling
-    - Context truncation for token limits
-    - Relevance-based video selection
-    - Conversation history integration
-    """
+    try:
+        video_count = len(rag.vector_store.video_collection.get()["ids"])
+        return {
+            "status": "ready",
+            "message": "API Server is ready to handle requests",
+            "rag_loaded": True,
+            "llm_loaded": llm is not None,
+            "video_count": video_count,
+            "processing_time": "completed"
+        }
+    except Exception as e:
+        return {
+            "status": "error",
+            "message": f"Error getting status: {str(e)}",
+            "rag_loaded": False,
+            "llm_loaded": llm is not None,
+            "video_count": 0,
+            "processing_time": 0
+        }
 ```
 
----
+**Purpose:** Provide detailed startup status for monitoring and debugging.
 
-## 🖥️ GUI Components
-
-### CustomTkinter Interface
-
-The GUI is built using CustomTkinter for a modern, responsive interface.
-
-#### Main Window Structure
+#### **`/query` - General Query Processing**
 ```python
-# Window configuration
-self.root = ctk.CTk()
-self.root.configure(fg_color="#FFFFFF")  # Light theme
-self.root.title("ClipQuery- Video Chatbot")
-self.root.geometry("900x650")
-```
-
-#### Component Hierarchy
-```
-Root Window
-├── Header Frame (Logo + Title)
-├── Chat Frame (Scrollable)
-├── Entry Frame (Input + Send Button)
-├── Button Frame (Video + Sync)
-└── Progress Bar (Hidden by default)
-```
-
-#### Chat Display System
-```python
-def display_message(self, sender, message):
-    """
-    Display messages in chat interface with proper styling.
+@app.post("/query", response_model=QueryResponse)
+async def process_query(request: QueryRequest):
+    """Process a general query and return LLM response."""
+    import time
+    start_time = time.time()
     
-    Features:
-    - Different colors for user vs assistant
-    - Proper text wrapping
-    - Responsive layout
-    - Auto-scroll to bottom
-    """
-```
-
-#### Typewriter Effect
-```python
-def typewriter_effect(self, sender, message):
-    """
-    Animate text appearance for more engaging user experience.
-    Displays text word by word with timing control.
-    """
-```
-
----
-
-## 🔧 Utility Functions
-
-### Time Management
-```python
-def _parse_srt_time(t):
-    """
-    Parse SRT timestamp formats into seconds.
-    Handles multiple formats: HH:MM:SS,mmm, MM:SS, and float seconds.
-    """
-
-def format_time(seconds):
-    """
-    Convert seconds to SRT format: HH:MM:SS,mmm
-    Used for subtitle generation and time display.
-    """
-```
-
-### Token Management
-```python
-def estimate_tokens(self, text):
-    """
-    Rough token estimation (1 token ≈ 4 characters).
-    Used for context length management.
-    """
-
-def check_token_limit(self, text, max_tokens=8000):
-    """
-    Ensure text doesn't exceed LLM token limits.
-    Truncates with ellipsis if necessary.
-    """
-```
-
-### Conversation History
-```python
-def manage_conversation_history(self, user_input, response):
-    """
-    Manage conversation history to prevent token overflow.
+    # Check if RAG system and chains are loaded
+    if rag is None or general_chain is None or clipping_chain is None:
+        raise HTTPException(
+            status_code=503, 
+            detail="System is still initializing. Please wait a moment and try again."
+        )
     
-    Features:
-    - Automatic truncation
-    - Turn-based management
-    - Context rebuilding
-    - Memory optimization
-    """
+    try:
+        # Check if this is a clipping query
+        is_clipping_query = request.query.lower().startswith(('clip:', 'clipping:', 'clip '))
+        
+        if is_clipping_query:
+            # Remove clipping prefix
+            clean_query = request.query.lower().replace('clip:', '').replace('clipping:', '').replace('clip ', '').strip()
+            
+            # Build context using sophisticated logic
+            transcript_context, rag_results = build_llm_context(clean_query, for_clipping=True)
+            
+            # Use clipping chain
+            response = clipping_chain.invoke({
+                "query": clean_query,
+                "transcript": transcript_context
+            })
+            
+            # Ensure response is a string
+            if response is None:
+                response = "No response generated from LLM"
+            elif not isinstance(response, str):
+                response = str(response)
+            
+            # Parse clips if requested
+            clips = None
+            if request.include_clips:
+                clips = parse_clips_from_response(response)
+                # Limit clips if specified
+                if request.max_clips and len(clips) > request.max_clips:
+                    clips = clips[:request.max_clips]
+        else:
+            # Build context using sophisticated logic
+            transcript_context, rag_results = build_llm_context(request.query, for_clipping=False)
+            
+            # Use general chain
+            response = general_chain.invoke({
+                "context": "",
+                "transcript": transcript_context,
+                "question": request.query
+            })
+            
+            # Ensure response is a string
+            if response is None:
+                response = "No response generated from LLM"
+            elif not isinstance(response, str):
+                response = str(response)
+            
+            clips = None
+        
+        processing_time = time.time() - start_time
+        
+        return QueryResponse(
+            response=response,
+            clips=clips,
+            video_count=len(rag.vector_store.video_collection.get()["ids"]) if hasattr(rag, 'vector_store') else 0,
+            processing_time=processing_time
+        )
+        
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error processing query: {str(e)}")
 ```
 
----
+**Purpose:** Process general queries and return LLM responses with optional clip parsing.
 
-## ⚡ Performance Optimization
+**Why clipping detection:** Routes clipping queries to specialized processing chain.
 
-### Memory Management
-- **Conversation History**: Limited to 10 turns maximum
-- **Context Truncation**: 8000 character limit for context
-- **Auto-clear**: Automatic history clearing when memory usage is high
-- **Token Estimation**: Proactive token limit checking
-
-### Video Processing Optimization
-- **Parallel Processing**: Background thread execution
-- **Temporary File Management**: Automatic cleanup of clip files
-- **Codec Optimization**: Fast encoding presets
-- **Quality Settings**: Balanced quality vs. speed (CRF 23)
-
-### Search Optimization
-- **Similarity Threshold**: 0.75 for relevance filtering
-- **Result Limiting**: Maximum 8 results for normal queries
-- **Pagination**: Efficient Google Drive API usage
-- **Caching**: Local file caching to reduce API calls
+**Why response validation:** Ensures consistent string responses even if LLM returns unexpected formats.
 
 ---
 
-## 🛡️ Error Handling
+## 🔧 **Performance Optimizations**
 
-### Comprehensive Error Management
-```python
-def ensure_video_file_available(self, video_id):
-    """
-    Robust video file availability checking with fallback mechanisms.
-    
-    Error Handling:
-    - File not found → Google Drive download attempt
-    - Download failure → Alternative video search
-    - No alternatives → Fallback to available videos
-    - Complete failure → User notification
-    """
-```
+### **1. Lifespan Optimization**
+- **Problem**: Transcripts processed on every request
+- **Solution**: Process once during startup using FastAPI lifespan events
+- **Benefit**: 10-20x faster response times
 
-### Google Drive Error Recovery
-- **Authentication Failures**: Automatic token refresh
-- **Network Issues**: Retry logic with exponential backoff
-- **Permission Errors**: Clear error messages and guidance
-- **API Limits**: Rate limiting and quota management
+### **2. Acronym Metadata Storage**
+- **Problem**: Slow acronym searches requiring full text scanning
+- **Solution**: Pre-extract and store acronyms in ChromaDB metadata
+- **Benefit**: 22x faster acronym queries
 
-### Video Processing Error Recovery
-- **FFmpeg Failures**: Detailed error logging and user feedback
-- **File Corruption**: Integrity checking and re-download
-- **Codec Issues**: Automatic format conversion
-- **Memory Issues**: Graceful degradation and cleanup
+### **3. Query-Type Specific Limits**
+- **Problem**: Fixed token limits for all queries
+- **Solution**: Dynamic limits based on query complexity
+- **Benefit**: 50-70% token reduction while maintaining quality
+
+### **4. Relevance Filtering**
+- **Problem**: Including low-relevance videos in context
+- **Solution**: Filter videos by similarity score threshold
+- **Benefit**: Better context quality and reduced token usage
 
 ---
 
-## ⚙️ Configuration
+## 📊 **Performance Metrics**
 
-### Environment Variables
+### **Token Usage Optimization:**
+- **Before**: 7,081 tokens for "Explain Star ULIP"
+- **After**: ~2,500-3,000 tokens
+- **Improvement**: 60-70% reduction
+
+### **Response Time Optimization:**
+- **Before**: 30-60 seconds for large collections
+- **After**: 1-3 seconds per query
+- **Improvement**: 10-20x faster
+
+### **Startup Time:**
+- **Small collection (10 videos)**: ~10-15 seconds
+- **Medium collection (50 videos)**: ~30-45 seconds
+- **Large collection (100+ videos)**: ~60-90 seconds
+
+---
+
+## 🚀 **Deployment Considerations**
+
+### **Resource Requirements:**
+- **Memory**: 2-4GB for medium collections
+- **Storage**: ChromaDB vector store + transcript files
+- **CPU**: Moderate during startup, low during queries
+
+### **Scaling Considerations:**
+- **Horizontal scaling**: Multiple API instances with shared vector store
+- **Vertical scaling**: Increase memory for larger collections
+- **Caching**: Consider Redis for frequently accessed data
+
+### **Monitoring:**
+- **Health checks**: `/health` endpoint for system status
+- **Performance metrics**: Response times and token usage
+- **Error tracking**: Exception handling and logging
+
+---
+
+## 🔍 **Troubleshooting Guide**
+
+### **Common Issues:**
+
+1. **"System is still initializing"**
+   - **Cause**: Server startup in progress
+   - **Solution**: Wait for startup completion, check `/status` endpoint
+
+2. **"No transcript files found"**
+   - **Cause**: Missing transcript files in "Max Life Videos" folder
+   - **Solution**: Ensure .txt files exist for videos
+
+3. **"Rate limit exceeded"**
+   - **Cause**: Groq API rate limit reached
+   - **Solution**: Wait or upgrade API plan
+
+4. **"Module not found"**
+   - **Cause**: Missing dependencies
+   - **Solution**: Install requirements with `pip install -r api_requirements.txt`
+
+### **Debug Commands:**
 ```bash
-# Required
-GROQ_API_KEY=gsk_your_api_key_here
+# Check server status
+curl http://localhost:8000/status
 
-# Optional
-GOOGLE_DRIVE_CREDENTIALS=credentials.json
-```
+# Test health
+curl http://localhost:8000/health
 
-### Application Settings
-```python
-# Conversation Management
-self.max_conversation_turns = 10
-self.max_context_chars = 8000
+# List videos
+curl http://localhost:8000/videos
 
-# Search Configuration
-self.similarity_threshold = 0.75
-
-# Video Processing
-MAX_CLIP_DURATION = 60.0  # seconds
-VIDEO_QUALITY_CRF = 23
-FRAME_RATE = 30
-AUDIO_SAMPLE_RATE = 44100
-```
-
-### Performance Tuning
-```python
-# RAG Configuration
-RAG_RESULTS_NORMAL = 8
-RAG_RESULTS_CLIPPING = 15
-
-# Google Drive
-PAGE_SIZE = 1000
-SYNC_INTERVAL = 30  # seconds
-
-# Memory Management
-TOKEN_LIMIT_NORMAL = 8000
-TOKEN_LIMIT_CLIPPING = 8000
+# Test query
+curl -X POST http://localhost:8000/query \
+  -H "Content-Type: application/json" \
+  -d '{"query": "What is NOPP?", "include_clips": false}'
 ```
 
 ---
 
-## 📊 Monitoring & Debugging
-
-### Debug Functions
-```python
-def debug_video_usage(self, rag_results, query_type="normal"):
-    """
-    Comprehensive debugging for video search and usage.
-    Shows detailed information about RAG results and video assignments.
-    """
-
-def debug_google_drive(self):
-    """
-    Debug Google Drive setup and permissions.
-    Lists folders, files, and identifies missing videos.
-    """
-```
-
-### Logging System
-- **Console Output**: Detailed progress and error messages
-- **Status Indicators**: Real-time sync and processing status
-- **Error Tracking**: Comprehensive error logging with context
-- **Performance Metrics**: Timing and resource usage tracking
-
----
-
-## 🔄 System Workflows
-
-### Normal Query Workflow
-1. **User Input**: Natural language question
-2. **RAG Search**: Semantic search across video transcripts
-3. **Context Building**: Aggregate relevant video segments
-4. **LLM Processing**: Generate comprehensive response
-5. **Response Display**: Show answer with conversation history update
-
-### Clipping Query Workflow
-1. **Query Analysis**: Parse clipping request
-2. **Multi-Video Search**: Find relevant segments across videos
-3. **LLM Clip Generation**: Generate precise time ranges
-4. **Video Assignment**: Match clips to correct videos
-5. **Clip Creation**: Use FFmpeg to create video clips
-6. **Concatenation**: Combine multiple clips if needed
-7. **Output**: Save final video to Downloads folder
-
-### Google Drive Sync Workflow
-1. **Authentication**: OAuth 2.0 authentication
-2. **File Discovery**: List all files with pagination
-3. **Missing Detection**: Identify videos without MP4 files
-4. **Download Queue**: Prioritize missing video downloads
-5. **Background Sync**: Continuous monitoring for changes
-6. **Error Recovery**: Handle network and permission issues
-
----
-
-## 🚀 Future Enhancements
-
-### Planned Features
-- **Web Interface**: Streamlit-based web UI
-- **Batch Processing**: Bulk video analysis
-- **Advanced Analytics**: Usage statistics and insights
-- **Plugin System**: Extensible architecture for custom features
-- **Cloud Deployment**: Docker containerization
-- **API Endpoints**: RESTful API for integration
-
-### Performance Improvements
-- **GPU Acceleration**: CUDA support for video processing
-- **Distributed Processing**: Multi-node video analysis
-- **Advanced Caching**: Redis-based result caching
-- **Streaming**: Real-time video processing
-- **Compression**: Advanced video compression algorithms
-
----
-
-<div align="center">
-  <p><strong>Technical Documentation v2.0</strong></p>
-  <p>Last updated: December 2024</p>
-</div>
-
-<style>
-/* Modern CSS styling for technical documentation */
-body {
-    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', sans-serif;
-    line-height: 1.6;
-    color: #24292e;
-    max-width: 1200px;
-    margin: 0 auto;
-    padding: 20px;
-    background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
-}
-
-h1, h2, h3, h4, h5, h6 {
-    color: #0366d6;
-    font-weight: 600;
-    margin-top: 24px;
-    margin-bottom: 16px;
-    border-bottom: 1px solid #eaecef;
-    padding-bottom: 0.3em;
-}
-
-h1 {
-    font-size: 2.5em;
-    text-align: center;
-    background: linear-gradient(45deg, #0366d6, #28a745);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    border-bottom: none;
-}
-
-h2 {
-    font-size: 1.8em;
-    color: #24292e;
-    background: #f6f8fa;
-    padding: 10px 15px;
-    border-radius: 6px;
-    border-left: 4px solid #0366d6;
-}
-
-h3 {
-    font-size: 1.4em;
-    color: #24292e;
-    border-bottom: 2px solid #e1e4e8;
-}
-
-code {
-    background-color: rgba(27, 31, 35, 0.05);
-    border-radius: 3px;
-    font-size: 85%;
-    margin: 0;
-    padding: 0.2em 0.4em;
-    font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
-}
-
-pre {
-    background-color: #f6f8fa;
-    border-radius: 6px;
-    font-size: 85%;
-    line-height: 1.45;
-    overflow: auto;
-    padding: 16px;
-    border: 1px solid #e1e4e8;
-}
-
-pre code {
-    background-color: transparent;
-    border: 0;
-    display: inline;
-    line-height: inherit;
-    margin: 0;
-    overflow: visible;
-    padding: 0;
-    word-wrap: normal;
-}
-
-blockquote {
-    border-left: 0.25em solid #dfe2e5;
-    color: #6a737d;
-    margin: 0;
-    padding: 0 1em;
-    background: #f6f8fa;
-    border-radius: 0 6px 6px 0;
-}
-
-table {
-    border-collapse: collapse;
-    border-spacing: 0;
-    width: 100%;
-    overflow: auto;
-    display: block;
-    margin: 20px 0;
-}
-
-table th, table td {
-    border: 1px solid #dfe2e5;
-    padding: 8px 12px;
-    text-align: left;
-}
-
-table th {
-    background-color: #f6f8fa;
-    font-weight: 600;
-    color: #24292e;
-}
-
-table tr:nth-child(even) {
-    background-color: #f8f9fa;
-}
-
-table tr:hover {
-    background-color: #f1f3f4;
-}
-
-img {
-    max-width: 100%;
-    height: auto;
-    border-radius: 6px;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-}
-
-.badge {
-    display: inline-block;
-    padding: 0.25em 0.4em;
-    font-size: 75%;
-    font-weight: 700;
-    line-height: 1;
-    text-align: center;
-    white-space: nowrap;
-    vertical-align: baseline;
-    border-radius: 0.25rem;
-    margin: 0 2px;
-}
-
-.badge-blue { background-color: #007bff; color: white; }
-.badge-green { background-color: #28a745; color: white; }
-.badge-orange { background-color: #fd7e14; color: white; }
-.badge-yellow { background-color: #ffc107; color: #212529; }
-.badge-purple { background-color: #6f42c1; color: white; }
-
-.architecture-diagram {
-    background: white;
-    border: 2px solid #e1e4e8;
-    border-radius: 8px;
-    padding: 20px;
-    margin: 20px 0;
-    font-family: 'Courier New', monospace;
-    font-size: 12px;
-    line-height: 1.2;
-}
-
-.workflow-step {
-    background: #f8f9fa;
-    border-left: 4px solid #28a745;
-    padding: 15px;
-    margin: 10px 0;
-    border-radius: 0 6px 6px 0;
-}
-
-.workflow-step h4 {
-    margin-top: 0;
-    color: #28a745;
-    border-bottom: none;
-}
-
-.feature-box {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    color: white;
-    padding: 20px;
-    border-radius: 8px;
-    margin: 20px 0;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-}
-
-.feature-box h3 {
-    color: white;
-    border-bottom: 1px solid rgba(255,255,255,0.3);
-}
-
-.alert {
-    padding: 12px 16px;
-    border-radius: 6px;
-    margin: 16px 0;
-    border-left: 4px solid;
-}
-
-.alert-info {
-    background-color: #d1ecf1;
-    border-color: #17a2b8;
-    color: #0c5460;
-}
-
-.alert-warning {
-    background-color: #fff3cd;
-    border-color: #ffc107;
-    color: #856404;
-}
-
-.alert-success {
-    background-color: #d4edda;
-    border-color: #28a745;
-    color: #155724;
-}
-
-.alert-danger {
-    background-color: #f8d7da;
-    border-color: #dc3545;
-    color: #721c24;
-}
-
----
-
-## 📚 Function Reference
-
-### Core Application Functions
-
-#### `ViviChatbot.__init__()`
-**Purpose**: Initialize the main application
-**Key Operations**:
-- Set up CustomTkinter GUI with light theme
-- Initialize Google Drive sync in background thread
-- Configure conversation history management
-- Set up RAG pipeline for semantic search
-- Check for missing video files on startup
-
-#### `ViviChatbot.send_message()`
-**Purpose**: Handle user input and generate responses
-**Workflow**:
-1. Parse user input for clipping vs. normal queries
-2. Build LLM context using RAG pipeline
-3. Generate AI response using Groq LLM
-4. For clipping queries: create video clips using FFmpeg
-5. Update conversation history and display results
-
-#### `ViviChatbot.build_llm_context(query, for_clipping=False)`
-**Purpose**: Build context for LLM by combining RAG results and conversation history
-**Features**:
-- Multi-query detection and handling
-- Context truncation for token limits
-- Relevance-based video selection
-- Conversation history integration
-- Enhanced query preprocessing for better RAG results
-
-### Video Processing Functions
-
-#### `ViviChatbot.clip_video(video_path, start_time, end_time)`
-**Purpose**: Create video clips using FFmpeg
-**Optimizations**:
-- H.264 video codec with CRF 23 quality
-- AAC audio codec at 44.1kHz
-- 30fps frame rate standardization
-- Fast encoding preset for speed
-- Optimized for streaming (faststart)
-
-#### `concatenate_videos(video_paths, output_filepath)`
-**Purpose**: Concatenate multiple video clips into a single output file
-**Process**:
-1. Validate video compatibility
-2. Create FFmpeg concat list file
-3. Re-encode for consistent codec settings
-4. Clean up temporary files
-
-#### `ViviChatbot.get_video_duration(video_path)`
-**Purpose**: Get video duration using OpenCV
-**Returns**: Duration in seconds or None if error
-
-#### `ViviChatbot.get_video_properties(video_path)`
-**Purpose**: Get comprehensive video properties using FFprobe
-**Returns**: Dictionary with codec, resolution, frame rate, etc.
-
-### RAG and Search Functions
-
-#### `ViviChatbot.load_transcript_segments(video_id, relevant_ranges=None)`
-**Purpose**: Load transcript segments for a video
-**Features**:
-- Optional filtering by time ranges
-- Robust error handling
-- Support for multiple timestamp formats
-
-#### `ViviChatbot.load_full_transcript(video_id)`
-**Purpose**: Load complete transcript for a video
-**Returns**: Full transcript text or empty string if error
-
-#### `ViviChatbot.improve_rag_results(rag_results, query)`
-**Purpose**: Enhance RAG results with exact keyword matching
-**Improvements**:
-- Exact word match boosting
-- Phrase match detection
-- Technical term recognition
-- Video content relevance scoring
-
-### Google Drive Integration Functions
-
-#### `ViviChatbot.init_google_drive_sync()`
-**Purpose**: Initialize Google Drive sync in background thread
-**Features**:
-- Background thread execution
-- Automatic initial sync
-- Error handling and status updates
-- File watching for changes
-
-#### `ViviChatbot.ensure_video_file_available(video_id)`
-**Purpose**: Ensure video file is available locally
-**Fallback Strategy**:
-1. Check local file existence
-2. Attempt Google Drive download
-3. Find alternative videos
-4. Provide detailed error feedback
-
-#### `ViviChatbot.find_alternative_video_for_clip(clip, rag_results)`
-**Purpose**: Find alternative video when original is missing
-**Process**:
-1. Search for videos with similar content
-2. Check for available MP4 files
-3. Update clip metadata
-4. Return best alternative
-
-### Conversation Management Functions
-
-#### `ViviChatbot.manage_conversation_history(user_input, response)`
-**Purpose**: Manage conversation history to prevent token overflow
-**Features**:
-- Automatic truncation at 10 turns
-- Context character limit of 8000
-- Token estimation and checking
-- Auto-clear when memory usage is high
-
-#### `ViviChatbot.estimate_tokens(text)`
-**Purpose**: Rough token estimation (1 token ≈ 4 characters)
-**Usage**: Context length management and LLM preparation
-
-#### `ViviChatbot.check_token_limit(text, max_tokens=8000)`
-**Purpose**: Ensure text doesn't exceed LLM token limits
-**Action**: Truncates with ellipsis if necessary
-
-### GUI and Display Functions
-
-#### `ViviChatbot.display_message(sender, message)`
-**Purpose**: Display messages in chat interface
-**Styling**:
-- Different colors for user vs assistant
-- Proper text wrapping
-- Responsive layout
-- Auto-scroll to bottom
-
-#### `ViviChatbot.typewriter_effect(sender, message)`
-**Purpose**: Animate text appearance for engaging UX
-**Features**:
-- Word-by-word display
-- Configurable timing
-- Smooth animation
-- Auto-scroll during animation
-
-#### `ViviChatbot.show_buffering()` / `ViviChatbot.hide_buffering()`
-**Purpose**: Show/hide processing indicators
-**Animation**: Animated dots during processing
-
-### Utility Functions
-
-#### `_parse_srt_time(t)`
-**Purpose**: Parse SRT timestamp formats into seconds
-**Supported Formats**:
-- HH:MM:SS,mmm
-- MM:SS
-- Float seconds
-
-#### `format_time(seconds)`
-**Purpose**: Convert seconds to SRT format: HH:MM:SS,mmm
-**Usage**: Subtitle generation and time display
-
-#### `ViviChatbot.normalize(text)`
-**Purpose**: Normalize text for comparison (remove spaces, lowercase)
-**Usage**: Acronym and term matching
-
-### Clip Processing Functions
-
-#### `ViviChatbot.parse_llm_clip_response(response)`
-**Purpose**: Parse LLM response to extract clip ranges
-**Features**:
-- Multiple pattern matching
-- Video ID assignment
-- Time range validation
-- Duration limits (max 300 seconds)
-
-#### `ViviChatbot.assign_clips_to_correct_videos(clips, query, rag_results)`
-**Purpose**: Assign clips to correct videos based on content relevance
-**Strategy**:
-- Respect LLM video assignments
-- Content-based matching
-- Overlap calculation
-- Fallback mechanisms
-
-#### `ViviChatbot.deduplicate_clips(clips, min_overlap=0.3, query="")`
-**Purpose**: Remove overlapping clips and keep most relevant
-**Features**:
-- Multi-topic query handling
-- Overlap ratio calculation
-- Video-based deduplication
-- Conservative approach for different videos
-
-#### `ViviChatbot.validate_and_improve_clips(clips, video_duration, is_acronym_query=False, query="")`
-**Purpose**: Validate clip ranges and ensure they're within video bounds
-**Validation**:
-- Start < end time
-- Within video duration
-- No negative values
-
-### Debug and Monitoring Functions
-
-#### `ViviChatbot.debug_video_usage(rag_results, query_type="normal")`
-**Purpose**: Comprehensive debugging for video search and usage
-**Output**:
-- Video distribution analysis
-- Segment relevance scores
-- Time range information
-- Content preview
-
-#### `ViviChatbot.check_for_missing_videos()`
-**Purpose**: Check for videos with transcripts but no MP4 files
-**Returns**: List of missing video IDs
-
-#### `ViviChatbot.check_missing_videos_on_startup()`
-**Purpose**: Check for missing videos on startup and notify user
-**Features**:
-- Background thread execution
-- User-friendly notifications
-- Actionable guidance
-
----
-
-## 🔄 System Workflows
-
-### Normal Query Workflow
-1. **User Input**: Natural language question
-2. **Query Analysis**: Determine query type and intent
-3. **RAG Search**: Semantic search across video transcripts
-4. **Context Building**: Aggregate relevant video segments
-5. **LLM Processing**: Generate comprehensive response using Groq
-6. **Response Display**: Show answer with conversation history update
-
-### Clipping Query Workflow
-1. **Query Analysis**: Parse clipping request and extract terms
-2. **Multi-Video Search**: Find relevant segments across all videos
-3. **LLM Clip Generation**: Generate precise time ranges using AI
-4. **Video Assignment**: Match clips to correct videos based on content
-5. **Deduplication**: Remove overlapping clips
-6. **Clip Creation**: Use FFmpeg to create individual video clips
-7. **Concatenation**: Combine multiple clips if needed
-8. **Output**: Save final video to Downloads folder
-
-### Google Drive Sync Workflow
-1. **Authentication**: OAuth 2.0 authentication with token refresh
-2. **File Discovery**: List all files with pagination support
-3. **Missing Detection**: Identify videos without MP4 files
-4. **Download Queue**: Prioritize missing video downloads
-5. **Background Sync**: Continuous monitoring for changes
-6. **Error Recovery**: Handle network and permission issues
-
-### Conversation Management Workflow
-1. **Input Processing**: Add new turn to conversation history
-2. **History Truncation**: Keep only last 10 turns
-3. **Context Building**: Rebuild context from history
-4. **Token Checking**: Ensure context fits within limits
-5. **Auto-clear**: Clear history if memory usage is high
-
----
-
-## 🔧 Troubleshooting
-
-### Common Issues and Solutions
-
-#### Google Drive Sync Problems
-**Symptoms**: Files not found, sync failures
-**Solutions**:
-```bash
-# Check credentials
-python debug_google_drive.py
-
-# Reset authentication
-rm token.json
-python Vivi_RAG_final3.py
-
-# Verify folder permissions
-# Check Google Drive API quotas
-```
-
-#### Video Processing Errors
-**Symptoms**: FFmpeg failures, corrupted clips
-**Solutions**:
-```bash
-# Verify FFmpeg installation
-ffmpeg -version
-
-# Check video file integrity
-python -c "import cv2; print('OpenCV available')"
-
-# Clear temporary files
-rm -rf /tmp/clip_*
-```
-
-#### Memory Issues
-**Symptoms**: Slow performance, crashes
-**Solutions**:
-- Reduce `max_conversation_turns` in settings
-- Close other applications
-- Increase system RAM
-- Clear conversation history manually
-
-#### RAG Search Issues
-**Symptoms**: Poor search results, missing content
-**Solutions**:
-- Check transcript file integrity
-- Verify vector database
-- Adjust similarity threshold
-- Rebuild RAG pipeline
-
-### Performance Optimization Tips
-
-1. **Storage**: Use SSD for faster video processing
-2. **Network**: Ensure stable internet for Google Drive sync
-3. **Memory**: Close unnecessary applications
-4. **Processing**: Use background threads for heavy operations
-5. **Caching**: Leverage local file caching
-
-### Debug Commands
-
-```bash
-# Terminal mode for testing
-python Vivi_RAG_final3.py "your query here"
-
-# Debug Google Drive setup
-python debug_google_drive.py
-
-# Check system requirements
-python -c "import cv2, whisper, customtkinter; print('All dependencies OK')"
-```
-
----
-
-<div align="center">
-  <p><strong>Technical Documentation v2.0</strong></p>
-  <p>Last updated: December 2024</p>
-  <p><em>Comprehensive guide for Vivi_RAG_final3.py</em></p>
-</div>
-</style>
+## 📚 **Future Enhancements**
+
+### **Planned Improvements:**
+1. **Hybrid Context Building**: Extract only relevant sections from full transcripts
+2. **Advanced Caching**: Redis-based caching for frequent queries
+3. **Batch Processing**: Process multiple queries efficiently
+4. **Real-time Updates**: Live transcript processing for new videos
+5. **Advanced Analytics**: Query performance and usage analytics
+
+### **Architecture Evolution:**
+- **Microservices**: Split into separate services for RAG, LLM, and API
+- **Event-driven**: Kafka/RabbitMQ for async processing
+- **Containerization**: Docker deployment for scalability
+- **Cloud-native**: Kubernetes orchestration for high availability

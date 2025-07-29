@@ -19,7 +19,7 @@ import uvicorn
 from rag_pipeline import VideoRAG
 
 # Set up environment
-os.environ["GROQ_API_KEY"] = "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"
+os.environ["GROQ_API_KEY"] = "YOUR_API_KEY_HERE"
 
 # Global variables for shared resources
 llm = None
